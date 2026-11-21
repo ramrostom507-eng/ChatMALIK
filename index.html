@@ -42,7 +42,7 @@ button,input,textarea{font:inherit}button{cursor:pointer}.shell{min-height:100vh
 <button class="attach-btn" id="voiceInput" type="button">🎙 <span id="voiceLabel">إملاء صوتي</span></button>
 <input id="imageInput" type="file" accept="image/*" multiple hidden>
 <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
-<input id="fileInput" type="file" accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx" multiple hidden>
+<input id="fileInput" type="file" accept=".pdf,.txt,.csv" multiple hidden>
 </div>
 <div class="tools-panel" id="toolsPanel">
 <button class="tool-btn" type="button" data-tool="web">🌐 <span id="webToolLabel">البحث على الإنترنت</span></button>
@@ -77,7 +77,7 @@ async function sendMessage(){if(!session)return;const text=$('prompt').value.tri
 let pendingFiles=[],activeTool=null;
 const MAX_UPLOAD_BYTES=20*1024*1024;
 function addFiles(fileList){
- const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','text/csv','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/msword','application/vnd.ms-excel'];
+ const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','text/csv'];
  for(const file of Array.from(fileList||[])){
   if(file.size>MAX_UPLOAD_BYTES){alert('الحد الأقصى لحجم الملف 20 ميغابايت.');continue}
   if(!allowed.includes(file.type)){alert('نوع الملف غير مدعوم: '+file.name);continue}
@@ -114,7 +114,7 @@ $('voiceInput').onclick=()=>{
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(!SR){alert('الإملاء الصوتي غير مدعوم في هذا المتصفح. جرّب Chrome أو استخدم لوحة المفاتيح الصوتية.');return}
  if(speechRecognition){speechRecognition.stop();speechRecognition=null;$('voiceInput').classList.remove('voice-active');return}
- speechRecognition=new SR();speechRecognition.lang=currentLang==='zh'?'zh-CN':currentLang==='ja'?'ja-JP':currentLang+'-'+currentLang.toUpperCase();speechRecognition.interimResults=true;
+ speechRecognition=new SR();speechRecognition.lang=({ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',es:'es-ES',tr:'tr-TR',it:'it-IT',pt:'pt-PT',ru:'ru-RU',zh:'zh-CN',ja:'ja-JP'})[currentLang]||'en-US';speechRecognition.interimResults=true;
  $('voiceInput').classList.add('voice-active');speechRecognition.onresult=e=>{let transcript='';for(let i=e.resultIndex;i<e.results.length;i++)transcript+=e.results[i][0].transcript;$('prompt').value=transcript};
  speechRecognition.onerror=()=>{$('toolStatus').textContent='تعذر تشغيل الإملاء الصوتي.'};
  speechRecognition.onend=()=>{$('voiceInput').classList.remove('voice-active');speechRecognition=null};
@@ -129,7 +129,8 @@ async function uploadPendingFiles(conversationId){
   if(error)throw error;
   const {data:signed,error:signedError}=await db.storage.from('chatmalik-attachments').createSignedUrl(path,3600);
   if(signedError)throw signedError;
-  uploaded.push({name:file.name,type:file.type,size:file.size,path,url:signed.signedUrl});
+  const textContent=(file.type==='text/plain'||file.type==='text/csv')&&file.size<=120000?await file.text():undefined;
+  uploaded.push({name:file.name,type:file.type,size:file.size,path,url:signed.signedUrl,...(textContent!==undefined?{text_content:textContent}:{})});
  }
  return uploaded;
 }
@@ -155,7 +156,7 @@ let currentLang='en';
 function detectLanguage(){const saved=localStorage.getItem('chatmalik-language');if(saved&&LANGS.includes(saved))return saved;for(const candidate of (navigator.languages||[navigator.language||'en'])){const code=String(candidate).toLowerCase().split('-')[0];if(LANGS.includes(code))return code;}return 'en';}
 function tr(key){return (I18N[currentLang]&&I18N[currentLang][key])||I18N.en[key]||key;}
 function applyLanguage(lang){if(!LANGS.includes(lang))lang='en';currentLang=lang;localStorage.setItem('chatmalik-language',lang);const rtl=RTL_LANGS.includes(lang);document.documentElement.lang=lang;document.documentElement.dir=rtl?'rtl':'ltr';document.title='ChatMALIK — '+tr('assistant');$('languageSelect').value=lang;
-$('toolsLabel').textContent=rtl?'الأدوات':'Tools';$('imagesLabel').textContent=rtl?'الصور':'Images';$('cameraLabel').textContent=rtl?'الكاميرا':'Camera';$('filesLabel').textContent=rtl?'الملفات':'Files';$('voiceLabel').textContent=rtl?'إملاء صوتي':'Voice';$('webToolLabel').textContent=rtl?'البحث على الإنترنت':'Web search';$('analyzeToolLabel').textContent=rtl?'تحليل الملفات':'File analysis';$('imageToolLabel').textContent=rtl?'إنشاء الصور':'Image creation';$('codeToolLabel').textContent=rtl?'مساعدة البرمجة':'Coding help';$('brandTagline').textContent=tr('tagline');$('newChat').textContent=tr('newChat');$('historyTitle').textContent=tr('history');$('logout').textContent=tr('logout');$('assistantTitle').textContent=tr('assistant');$('welcomeTitle').textContent=tr('welcome');$('welcomeText').textContent=tr('welcomeText');$('prompt').placeholder=tr('placeholder');$('send').textContent=tr('send');$('privacyHint').textContent=tr('privacy');$('accountLabel').textContent=tr('account');$('authTitle').textContent=signUpMode?tr('signup'):tr('login');$('authDescription').textContent=tr('authDesc');$('email').placeholder=tr('email');$('password').placeholder=tr('password');$('authSubmit').textContent=signUpMode?tr('signup'):tr('login');$('authSwitch').textContent=signUpMode?tr('switchLogin'):tr('switchSignup');if(!session)$('userEmail').textContent=tr('loggedOut');}
+const extraLabels=({ar:['الأدوات','الصور','الكاميرا','الملفات','إملاء صوتي','البحث على الإنترنت','تحليل الملفات','إنشاء الصور','مساعدة البرمجة'],en:['Tools','Images','Camera','Files','Voice input','Web search','File analysis','Image creation','Coding help'],fr:['Outils','Images','Caméra','Fichiers','Dictée vocale','Recherche web','Analyse de fichiers','Créer une image','Aide au code'],de:['Werkzeuge','Bilder','Kamera','Dateien','Spracheingabe','Websuche','Dateianalyse','Bilderstellung','Programmierhilfe'],es:['Herramientas','Imágenes','Cámara','Archivos','Dictado','Buscar en la web','Analizar archivos','Crear imágenes','Ayuda de código'],tr:['Araçlar','Görseller','Kamera','Dosyalar','Sesle yazma','Web araması','Dosya analizi','Görsel oluşturma','Kodlama yardımı'],it:['Strumenti','Immagini','Fotocamera','File','Dettatura','Ricerca web','Analisi file','Crea immagini','Aiuto programmazione'],pt:['Ferramentas','Imagens','Câmera','Arquivos','Ditado por voz','Pesquisa na web','Análise de arquivos','Criar imagens','Ajuda de programação'],ru:['Инструменты','Изображения','Камера','Файлы','Голосовой ввод','Поиск в интернете','Анализ файлов','Создание изображений','Помощь с кодом'],zh:['工具','图片','相机','文件','语音输入','网页搜索','文件分析','生成图像','编程帮助'],ja:['ツール','画像','カメラ','ファイル','音声入力','ウェブ検索','ファイル分析','画像生成','コーディング支援']})[lang]||['Tools','Images','Camera','Files','Voice input','Web search','File analysis','Image creation','Coding help'];['toolsLabel','imagesLabel','cameraLabel','filesLabel','voiceLabel','webToolLabel','analyzeToolLabel','imageToolLabel','codeToolLabel'].forEach((id,i)=>$(id).textContent=extraLabels[i]);$('brandTagline').textContent=tr('tagline');$('newChat').textContent=tr('newChat');$('historyTitle').textContent=tr('history');$('logout').textContent=tr('logout');$('assistantTitle').textContent=tr('assistant');$('welcomeTitle').textContent=tr('welcome');$('welcomeText').textContent=tr('welcomeText');$('prompt').placeholder=tr('placeholder');$('send').textContent=tr('send');$('privacyHint').textContent=tr('privacy');$('accountLabel').textContent=tr('account');$('authTitle').textContent=signUpMode?tr('signup'):tr('login');$('authDescription').textContent=tr('authDesc');$('email').placeholder=tr('email');$('password').placeholder=tr('password');$('authSubmit').textContent=signUpMode?tr('signup'):tr('login');$('authSwitch').textContent=signUpMode?tr('switchLogin'):tr('switchSignup');if(!session)$('userEmail').textContent=tr('loggedOut');}
 $('languageSelect').addEventListener('change',e=>applyLanguage(e.target.value));
 
 applyLanguage(detectLanguage());db.auth.onAuthStateChange(()=>setTimeout(refresh,0));refresh();
