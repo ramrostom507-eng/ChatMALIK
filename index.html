@@ -189,7 +189,7 @@ async function uploadPendingFiles(conversationId){
   if(error)throw error;
   const {data:signed,error:signedError}=await db.storage.from('chatmalik-attachments').createSignedUrl(path,3600);
   if(signedError)throw signedError;
-  const textContent=(['text/plain','text/csv'].includes(getMime(file)))&&file.size<=120000?await file.text():undefined;
+  const textContent=(['text/plain','text/csv','text/markdown','text/html','application/json','application/xml','text/xml','application/rtf','text/rtf'].includes(getMime(file)))&&file.size<=120000?await file.text():undefined;
   uploaded.push({name:file.name,type:getMime(file),size:file.size,path,url:signed.signedUrl,...(textContent!==undefined?{text_content:textContent}:{})});
  }
  return uploaded;
