@@ -67,15 +67,15 @@ function showAuth(show){$('auth').style.display=show?'grid':'none'}
 async function authAction(){const email=$('email').value.trim(),password=$('password').value;if(!email||!password){status(tr('enterCredentials'));return}status(tr('working'));const res=signUpMode?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});if(res.error){status(res.error.message);return}if(signUpMode&&!res.data.session){status(tr('signupDone'));return}status('');}
 $('authSubmit').onclick=authAction;
 $('authSwitch').onclick=()=>{signUpMode=!signUpMode;$('authTitle').textContent=signUpMode?tr('signup'):tr('login');$('authSubmit').textContent=signUpMode?tr('signup'):tr('login');$('authSwitch').textContent=signUpMode?tr('switchLogin'):tr('switchSignup');status('')};
-async function refresh(){const {data}=await db.auth.getSession();session=data.session;if(!session){showAuth(true);$('logout').style.display='none';return}showAuth(false);$('userEmail').textContent=session.user.email||'حسابك';$('logout').style.display='inline-block';await loadConversations()}
+async function refresh(){const {data}=await db.auth.getSession();session=data.session;if(!session){showAuth(true);$('logout').style.display='none';return}showAuth(false);$('userEmail').textContent=session.user.email||'حسابك';$('logout').style.display='inline-block';await loadConversations();if(!currentConversation){const {data:latest}=await db.from('conversations').select('id').order('updated_at',{ascending:false}).limit(1).maybeSingle();if(latest?.id)await openConversation(latest.id)}}
 async function loadConversations(){const {data,error}=await db.from('conversations').select('id,title,updated_at').order('updated_at',{ascending:false});if(error){console.error(error);return}$('history').innerHTML='';(data||[]).forEach(c=>{const b=document.createElement('button');b.textContent=c.title||tr('newTitle');b.className=c.id===currentConversation?'active':'';b.onclick=()=>openConversation(c.id);$('history').appendChild(b)})}
 async function newConversation(){const {data,error}=await db.from('conversations').insert({user_id:session.user.id,title:tr('newTitle')}).select('id').single();if(error){alert(tr('createError')+error.message);return}currentConversation=data.id;$('messages').innerHTML='';$('welcome').style.display='block';await loadConversations();$('prompt').focus()}
 async function openConversation(id){currentConversation=id;$('welcome').style.display='none';const {data,error}=await db.from('messages').select('id,role,content,created_at').eq('conversation_id',id).order('created_at');if(error){alert(tr('loadError')+error.message);return}$('messages').innerHTML='';(data||[]).forEach(addMessage);await loadConversations();$('side').classList.remove('open')}
 function addMessage(m){const d=document.createElement('div');d.className='msg '+(m.role==='user'?'user':'assistant');d.dir='auto';d.textContent=m.content;$('messages').appendChild(d);$('messages').scrollTop=$('messages').scrollHeight}
-async function sendMessage(){if(!session)return;const text=$('prompt').value.trim();if(!text&&!pendingFiles.length)return;if(text.length>8000){alert(tr('tooLong'));return}if(!currentConversation)await newConversation();if(!currentConversation)return;$('send').disabled=true;$('send').textContent='…';let uploaded=[];try{if(pendingFiles.length)uploaded=await uploadPendingFiles(currentConversation)}catch(uploadError){alert('تعذر رفع المرفق: '+uploadError.message);$('send').disabled=false;$('send').textContent=tr('send');return}const savedText=(text||'')+(uploaded.length?'\\n\\n[تم إرفاق: '+uploaded.map(x=>x.name).join('، ')+']':'');pendingFiles=[];renderAttachments();$('prompt').value='';$('welcome').style.display='none';$('send').disabled=true;$('send').textContent='…';const {error:saveError}=await db.from('messages').insert({conversation_id:currentConversation,role:'user',content:savedText});if(saveError){alert(tr('sendError')+saveError.message);$('send').disabled=false;$('send').textContent=tr('send');return}addMessage({role:'user',content:savedText});const conversationId=currentConversation;await db.from('conversations').update({updated_at:new Date().toISOString(),title:text.slice(0,45)}).eq('id',conversationId);const pending=document.createElement('div');pending.className='msg assistant';pending.textContent=tr('thinking');pending.id='pendingReply';$('messages').appendChild(pending);$('messages').scrollTop=$('messages').scrollHeight;const {data,error}=await db.functions.invoke('chatmalik-chat',{body:{conversation_id:conversationId,language:currentLang,locale:currentLang,reply_language:currentLang,attachments:uploaded,tool:activeTool}});pending.remove();if(error||!data?.reply){const reason=data?.error||error?.message||tr('genericError');addMessage({role:'assistant',content:tr('replyError')+reason+'\n'+tr('checkKey')})}else{addMessage({role:'assistant',content:data.reply});if(voiceConversationMode)speakReply(data.reply)}await loadConversations();$('send').disabled=false;$('send').textContent=tr('send');$('prompt').focus()}
+async function sendMessage(){if(!session)return;const text=$('prompt').value.trim();if(!text&&!pendingFiles.length)return;if(text.length>8000){alert(tr('tooLong'));return}if(!currentConversation)await newConversation();if(!currentConversation)return;$('send').disabled=true;$('send').textContent='…';let uploaded=[];try{if(pendingFiles.length)uploaded=await uploadPendingFiles(currentConversation)}catch(uploadError){alert('تعذر رفع المرفق: '+uploadError.message);$('send').disabled=false;$('send').textContent=tr('send');return}const savedText=(text||'')+(uploaded.length?'\\n\\n[تم إرفاق: '+uploaded.map(x=>x.name).join('، ')+']':'');pendingFiles=[];renderAttachments();$('prompt').value='';$('welcome').style.display='none';$('send').disabled=true;$('send').textContent='…';const {error:saveError}=await db.from('messages').insert({conversation_id:currentConversation,role:'user',content:savedText});if(saveError){alert(tr('sendError')+saveError.message);$('send').disabled=false;$('send').textContent=tr('send');return}addMessage({role:'user',content:savedText});const conversationId=currentConversation;await db.from('conversations').update({updated_at:new Date().toISOString(),title:text.slice(0,45)}).eq('id',conversationId);const pending=document.createElement('div');pending.className='msg assistant';pending.textContent=tr('thinking');pending.id='pendingReply';$('messages').appendChild(pending);$('messages').scrollTop=$('messages').scrollHeight;const {data,error}=await db.functions.invoke('chatmalik-chat',{body:{conversation_id:conversationId,language:currentLang,locale:currentLang,reply_language:currentLang,attachments:uploaded,tool:activeTool}});pending.remove();if(error||!data?.reply){const reason=data?.error||error?.message||tr('genericError');addMessage({role:'assistant',content:tr('replyError')+reason+'\n'+tr('checkKey')})}else{addMessage({role:'assistant',content:data.reply});if(voiceConversationMode)speakReply(data.reply,()=>{if(voiceConversationMode)setTimeout(startVoiceListening,350)})}await loadConversations();$('send').disabled=false;$('send').textContent=tr('send');$('prompt').focus()}
 
 /* Attachments, camera capture, speech dictation and tool shortcuts */
-let pendingFiles=[],activeTool=null;
+let pendingFiles=[],activeTool=null,pendingPreviewUrls=[];
 const MAX_UPLOAD_BYTES=20*1024*1024;
 function getMime(file){
  if(file.type)return file.type;
@@ -93,10 +93,12 @@ function addFiles(fileList){
  renderAttachments();
 }
 function renderAttachments(){
- const box=$('attachmentPreview');box.innerHTML='';
+ const box=$('attachmentPreview');
+ pendingPreviewUrls.forEach(url=>URL.revokeObjectURL(url));pendingPreviewUrls=[];
+ box.innerHTML='';
  pendingFiles.forEach((file,index)=>{
   const chip=document.createElement('div');chip.className='attachment-chip';
-  if(getMime(file).startsWith('image/')){const img=document.createElement('img');img.src=URL.createObjectURL(file);img.alt=file.name;chip.appendChild(img)}
+  if(getMime(file).startsWith('image/')){const img=document.createElement('img');const url=URL.createObjectURL(file);pendingPreviewUrls.push(url);img.src=url;img.alt=file.name;chip.appendChild(img)}
   const name=document.createElement('span');name.textContent=file.name;chip.appendChild(name);
   const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove attachment');remove.onclick=()=>{pendingFiles.splice(index,1);renderAttachments()};chip.appendChild(remove);box.appendChild(chip);
  });
@@ -117,17 +119,55 @@ document.querySelectorAll('[data-tool]').forEach(btn=>btn.onclick=()=>{
 });
 let speechRecognition=null;
 let voiceConversationMode=false;
-function speakReply(text){if(!('speechSynthesis' in window))return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);const lm={ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',es:'es-ES',tr:'tr-TR',it:'it-IT',pt:'pt-PT',ru:'ru-RU',zh:'zh-CN',ja:'ja-JP'};u.lang=lm[currentLang]||'en-US';window.speechSynthesis.speak(u)}
+function speechLanguage(){return ({ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',es:'es-ES',tr:'tr-TR',it:'it-IT',pt:'pt-PT',ru:'ru-RU',zh:'zh-CN',ja:'ja-JP'})[currentLang]||'en-US'}
+function speakReply(text,onFinished){
+ if(!('speechSynthesis' in window)){if(onFinished)onFinished();return}
+ window.speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);u.lang=speechLanguage();u.rate=1;u.pitch=1;
+ u.onend=()=>{if(onFinished)onFinished()};
+ u.onerror=()=>{if(onFinished)onFinished()};
+ window.speechSynthesis.speak(u);
+}
+function startVoiceListening(){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!voiceConversationMode||!SR)return;
+ if(window.speechSynthesis&&window.speechSynthesis.speaking)return;
+ const recognition=new SR();speechRecognition=recognition;
+ recognition.lang=speechLanguage();recognition.interimResults=false;recognition.continuous=false;
+ let transcript='';
+ recognition.onstart=()=>{$('voiceChat').classList.add('voice-active');$('toolStatus').textContent='أستمع إليك الآن… تحدث بشكل طبيعي.'};
+ recognition.onresult=e=>{transcript=Array.from(e.results).map(r=>r[0].transcript).join(' ').trim()};
+ recognition.onerror=e=>{
+  if(!voiceConversationMode)return;
+  if(e.error==='no-speech'||e.error==='aborted')return;
+  voiceConversationMode=false;$('voiceChat').classList.remove('voice-active');
+  $('toolStatus').textContent='تعذر الوصول إلى الميكروفون أو خدمة التعرف على الكلام. تحقق من إذن الميكروفون والاتصال.';
+ };
+ recognition.onend=()=>{
+  if(speechRecognition===recognition)speechRecognition=null;
+  if(!voiceConversationMode)return;
+  if(transcript){
+   $('prompt').value=transcript;$('toolStatus').textContent='وصل كلامك، جارٍ إعداد الرد…';
+   sendMessage();
+  }else{
+   setTimeout(()=>{if(voiceConversationMode)startVoiceListening()},500);
+  }
+ };
+ try{recognition.start()}catch(e){speechRecognition=null;voiceConversationMode=false;$('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='لم يتمكن المتصفح من تشغيل الميكروفون. حاول مرة أخرى.'}
+}
 $('voiceChat').onclick=()=>{
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!SR){alert('المحادثة الصوتية غير مدعومة في هذا المتصفح. استخدم Chrome واسمح بالوصول إلى الميكروفون.');return}
- if(voiceConversationMode){voiceConversationMode=false;if(speechRecognition)speechRecognition.stop();window.speechSynthesis?.cancel();$('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='تم إيقاف المحادثة الصوتية.';return}
- voiceConversationMode=true;$('voiceChat').classList.add('voice-active');$('toolStatus').textContent='استمع الآن... تحدث، وسيُرسل كلامك تلقائياً ويُقرأ الرد بصوت مسموع.';
- speechRecognition=new SR();speechRecognition.lang=({ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',es:'es-ES',tr:'tr-TR',it:'it-IT',pt:'pt-PT',ru:'ru-RU',zh:'zh-CN',ja:'ja-JP'})[currentLang]||'en-US';speechRecognition.interimResults=false;speechRecognition.continuous=false;
- speechRecognition.onresult=e=>{const t=Array.from(e.results).map(r=>r[0].transcript).join(' ').trim();if(t){$('prompt').value=t;$('toolStatus').textContent='تم التقاط كلامك، جارٍ الإرسال...'}};
- speechRecognition.onerror=()=>{$('toolStatus').textContent='تعذر تشغيل الميكروفون. تحقق من إذن الميكروفون.'};
- speechRecognition.onend=()=>{const heard=$('prompt').value.trim();$('voiceChat').classList.remove('voice-active');speechRecognition=null;if(voiceConversationMode&&heard)sendMessage();else if(voiceConversationMode)$('toolStatus').textContent='لم ألتقط كلاماً واضحاً. حاول مجدداً.'};
- speechRecognition.start();
+ if(voiceConversationMode){
+  voiceConversationMode=false;
+  if(speechRecognition){try{speechRecognition.stop()}catch(e){}speechRecognition=null}
+  if('speechSynthesis' in window)window.speechSynthesis.cancel();
+  $('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='تم إيقاف المحادثة الصوتية.';
+  return;
+ }
+ if(!SR){alert('المحادثة الصوتية غير مدعومة في هذا المتصفح. جرّب Chrome واسمح باستخدام الميكروفون.');return}
+ voiceConversationMode=true;$('voiceChat').classList.add('voice-active');
+ $('toolStatus').textContent='بدأت المحادثة الصوتية. تحدث، وسيجيبك ChatMALIK بصوت مسموع.';
+ startVoiceListening();
 };
 $('voiceInput').onclick=()=>{
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
