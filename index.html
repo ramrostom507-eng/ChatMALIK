@@ -10,6 +10,21 @@
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#182944 0,#0b1220 55%);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;min-height:100vh}
 button,input,textarea{font:inherit}button{cursor:pointer}.shell{min-height:100vh;display:grid;grid-template-columns:280px 1fr;max-width:1500px;margin:auto}.side{background:#0c1524;border-left:1px solid var(--line);padding:22px 16px;display:flex;flex-direction:column;gap:18px}.brand{display:flex;align-items:center;gap:12px;padding:8px}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#f0d18d,#a77a35);color:#182236;display:grid;place-items:center;font-weight:900;font-size:20px}.brand strong{font-size:19px;letter-spacing:.2px}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:2px}.new{border:1px solid #80683d;background:#211f1b;color:#f3d89d;padding:12px;border-radius:12px;font-weight:700}.side h4{color:var(--muted);font-size:12px;margin:8px 8px 0}.history{display:flex;flex-direction:column;gap:6px;overflow:auto}.history button{background:transparent;color:#d7e1ef;border:0;text-align:right;padding:10px;border-radius:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.history button.active,.history button:hover{background:var(--panel2)}.userbox{margin-top:auto;border-top:1px solid var(--line);padding:14px 6px;color:var(--muted);font-size:13px}.main{display:flex;flex-direction:column;min-height:100vh}.top{height:66px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 26px}.top span{color:var(--muted);font-size:13px}.top button,.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:8px 13px;border-radius:9px}.content{width:min(900px,100%);margin:auto;padding:36px 24px;display:flex;flex-direction:column;flex:1}.welcome{text-align:center;margin:auto auto 30px}.welcome .orb{width:70px;height:70px;border-radius:24px;background:linear-gradient(145deg,#f0d18d,#a77a35);color:#172235;font-size:30px;font-weight:900;display:grid;place-items:center;margin:0 auto 18px;box-shadow:0 10px 35px #0005}.welcome h1{font-size:clamp(25px,4vw,38px);margin:0 0 10px}.welcome p{color:var(--muted);margin:0}.messages{display:flex;flex-direction:column;gap:16px;padding:12px 0 24px}.msg{max-width:85%;padding:14px 17px;border-radius:16px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}.msg.user{align-self:flex-start;background:#20334e;border:1px solid #2c4667}.msg.assistant{align-self:flex-end;background:#121f31;border:1px solid var(--line)}.composer{position:sticky;bottom:0;background:linear-gradient(transparent,#0b1220 20%);padding:18px 0 8px}.composebox{display:flex;gap:10px;background:#111c2e;border:1px solid #34465f;border-radius:18px;padding:10px;box-shadow:0 15px 45px #0005}.composebox textarea{resize:none;min-height:48px;max-height:180px;flex:1;background:transparent;color:var(--text);border:0;outline:0;padding:12px}.send{align-self:flex-end;background:var(--gold);color:#172235;border:0;border-radius:12px;padding:12px 18px;font-weight:800}.hint{text-align:center;color:#71839b;font-size:11px;margin:10px}.authwrap{position:fixed;inset:0;background:#070d18eF;display:grid;place-items:center;padding:18px;z-index:5}.auth{width:min(420px,100%);background:#111c2e;border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:0 25px 90px #0009}.auth h2{margin:0 0 8px}.auth p{color:var(--muted);font-size:13px;line-height:1.6}.auth input{width:100%;padding:13px;margin:7px 0;background:#0b1423;border:1px solid var(--line);border-radius:10px;color:white;direction:ltr}.primary{width:100%;padding:13px;background:var(--gold);color:#172235;border:0;border-radius:10px;font-weight:800;margin-top:10px}.switch{width:100%;background:none;border:0;color:#a9c9f4;padding:14px 0 0}.status{color:#f0c979;font-size:12px;min-height:20px;margin-top:10px}.mobilemenu{display:none}.lang-select{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:8px 10px;border-radius:9px;max-width:145px}
 @media(max-width:720px){.shell{display:block}.side{display:none;position:fixed;z-index:4;inset:0 0 0 auto;width:min(300px,85vw);box-shadow:0 0 0 100vw #0009}.side.open{display:flex}.mobilemenu{display:inline-block}.top{padding:0 14px}.content{padding:25px 14px}.msg{max-width:94%}.brand strong{font-size:18px}}
+
+.attach-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:0 4px 7px}
+.attach-btn,.tool-btn{background:#17243a;color:#dce7f5;border:1px solid #34465f;border-radius:10px;padding:9px 11px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.attach-btn:hover,.tool-btn:hover{border-color:var(--gold);color:#f3d89d}
+.attach-preview{display:flex;gap:8px;flex-wrap:wrap;padding:0 4px 8px}
+.attachment-chip{display:flex;align-items:center;gap:8px;background:#1a2a41;border:1px solid #34465f;border-radius:10px;padding:6px 9px;max-width:100%;font-size:12px}
+.attachment-chip img{width:38px;height:38px;object-fit:cover;border-radius:6px}
+.attachment-chip span{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attachment-chip button{background:none;border:0;color:#ff9b9b;font-size:18px}
+.tools-panel{display:none;position:absolute;bottom:100%;inset-inline-start:0;background:#111c2e;border:1px solid #34465f;border-radius:14px;padding:12px;width:min(310px,90vw);box-shadow:0 15px 40px #0008;z-index:3}
+.tools-panel.open{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.composer{position:sticky;z-index:2}.composebox{position:relative;align-items:flex-end}.composebox textarea{min-width:0}
+.voice-active{border-color:#d96c6c!important;color:#ffaaaa!important}
+.tool-status{font-size:11px;color:var(--muted);padding:2px 5px}
+@media(max-width:520px){.attach-btn{padding:8px 9px;font-size:12px}.attach-actions{gap:5px}.composebox{gap:6px;padding:8px}.send{padding:11px 12px}}
 </style></head>
 <body>
 <div class="shell">
@@ -17,7 +32,27 @@ button,input,textarea{font:inherit}button{cursor:pointer}.shell{min-height:100vh
 <button class="new" id="newChat">＋ محادثة جديدة</button><h4 id="historyTitle">محادثاتك</h4><div class="history" id="history"></div><div class="userbox"><div id="userEmail">غير مسجل الدخول</div><button class="ghost" id="logout" style="margin-top:10px;display:none">تسجيل الخروج</button></div></aside>
 <main class="main"><header class="top"><div><button class="mobilemenu" id="menu">☰</button> <b id="assistantTitle">المساعد الذكي</b></div><select id="languageSelect" class="lang-select" aria-label="Language"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="zh">中文</option><option value="ja">日本語</option></select></header>
 <section class="content"><div class="welcome" id="welcome"><div class="orb">M</div><h1 id="welcomeTitle">أهلاً بك في ChatMALIK</h1><p id="welcomeText">مساحة محادثاتك الذكية — ابدأ محادثة جديدة</p></div><div class="messages" id="messages"></div>
-<div class="composer"><div class="composebox"><textarea id="prompt" rows="1" placeholder="اكتب رسالتك هنا..."></textarea><button class="send" id="send">إرسال ↑</button></div><div class="hint" id="privacyHint">لا تشارك كلمات المرور أو المعلومات الحساسة في المحادثة.</div></div></section></main></div>
+<div class="composer">
+<div class="attach-preview" id="attachmentPreview"></div>
+<div class="attach-actions">
+<button class="attach-btn" id="plusTools" type="button" aria-label="More tools">＋ <span id="toolsLabel">الأدوات</span></button>
+<button class="attach-btn" id="pickImages" type="button">▧ <span id="imagesLabel">الصور</span></button>
+<button class="attach-btn" id="openCamera" type="button">◎ <span id="cameraLabel">الكاميرا</span></button>
+<button class="attach-btn" id="pickFiles" type="button">⌁ <span id="filesLabel">الملفات</span></button>
+<button class="attach-btn" id="voiceInput" type="button">🎙 <span id="voiceLabel">إملاء صوتي</span></button>
+<input id="imageInput" type="file" accept="image/*" multiple hidden>
+<input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+<input id="fileInput" type="file" accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx" multiple hidden>
+</div>
+<div class="tools-panel" id="toolsPanel">
+<button class="tool-btn" type="button" data-tool="web">🌐 <span id="webToolLabel">البحث على الإنترنت</span></button>
+<button class="tool-btn" type="button" data-tool="analyze">📄 <span id="analyzeToolLabel">تحليل الملفات</span></button>
+<button class="tool-btn" type="button" data-tool="image">🎨 <span id="imageToolLabel">إنشاء الصور</span></button>
+<button class="tool-btn" type="button" data-tool="code">⌘ <span id="codeToolLabel">مساعدة البرمجة</span></button>
+</div>
+<div class="composebox"><textarea id="prompt" rows="1" placeholder="اكتب رسالتك هنا..."></textarea><button class="send" id="send">إرسال ↑</button></div>
+<div class="tool-status" id="toolStatus"></div>
+<div class="hint" id="privacyHint">لا تشارك كلمات المرور أو المعلومات الحساسة في المحادثة.</div></div></section></main></div>
 <div class="authwrap" id="auth"><div class="auth"><div class="brand" style="padding:0 0 18px"><div class="logo">M</div><div><strong>ChatMALIK</strong><small id="accountLabel">حسابك الشخصي</small></div></div><h2 id="authTitle">تسجيل الدخول</h2><p id="authDescription">سجّل الدخول لحفظ محادثاتك والوصول إليها لاحقاً.</p><input id="email" type="email" placeholder="البريد الإلكتروني"><input id="password" type="password" placeholder="كلمة المرور"><button class="primary" id="authSubmit">دخول</button><button class="switch" id="authSwitch">إنشاء حساب جديد</button><div class="status" id="authStatus"></div></div></div>
 <script>
 const SUPABASE_URL='https://qitjxsofexftxrrkdvom.supabase.co';
@@ -36,7 +71,68 @@ async function loadConversations(){const {data,error}=await db.from('conversatio
 async function newConversation(){const {data,error}=await db.from('conversations').insert({user_id:session.user.id,title:tr('newTitle')}).select('id').single();if(error){alert(tr('createError')+error.message);return}currentConversation=data.id;$('messages').innerHTML='';$('welcome').style.display='block';await loadConversations();$('prompt').focus()}
 async function openConversation(id){currentConversation=id;$('welcome').style.display='none';const {data,error}=await db.from('messages').select('id,role,content,created_at').eq('conversation_id',id).order('created_at');if(error){alert(tr('loadError')+error.message);return}$('messages').innerHTML='';(data||[]).forEach(addMessage);await loadConversations();$('side').classList.remove('open')}
 function addMessage(m){const d=document.createElement('div');d.className='msg '+(m.role==='user'?'user':'assistant');d.dir='auto';d.textContent=m.content;$('messages').appendChild(d);$('messages').scrollTop=$('messages').scrollHeight}
-async function sendMessage(){if(!session)return;const text=$('prompt').value.trim();if(!text)return;if(text.length>8000){alert(tr('tooLong'));return}if(!currentConversation)await newConversation();if(!currentConversation)return;$('prompt').value='';$('welcome').style.display='none';$('send').disabled=true;$('send').textContent='…';const {error:saveError}=await db.from('messages').insert({conversation_id:currentConversation,role:'user',content:text});if(saveError){alert(tr('sendError')+saveError.message);$('send').disabled=false;$('send').textContent=tr('send');return}addMessage({role:'user',content:text});const conversationId=currentConversation;await db.from('conversations').update({updated_at:new Date().toISOString(),title:text.slice(0,45)}).eq('id',conversationId);const pending=document.createElement('div');pending.className='msg assistant';pending.textContent=tr('thinking');pending.id='pendingReply';$('messages').appendChild(pending);$('messages').scrollTop=$('messages').scrollHeight;const {data,error}=await db.functions.invoke('chatmalik-chat',{body:{conversation_id:conversationId,language:currentLang,locale:currentLang,reply_language:currentLang}});pending.remove();if(error||!data?.reply){const reason=data?.error||error?.message||tr('genericError');addMessage({role:'assistant',content:tr('replyError')+reason+'\n'+tr('checkKey')})}else{addMessage({role:'assistant',content:data.reply})}await loadConversations();$('send').disabled=false;$('send').textContent=tr('send');$('prompt').focus()}
+async function sendMessage(){if(!session)return;const text=$('prompt').value.trim();if(!text&&!pendingFiles.length)return;if(text.length>8000){alert(tr('tooLong'));return}if(!currentConversation)await newConversation();if(!currentConversation)return;$('send').disabled=true;$('send').textContent='…';let uploaded=[];try{if(pendingFiles.length)uploaded=await uploadPendingFiles(currentConversation)}catch(uploadError){alert('تعذر رفع المرفق: '+uploadError.message);$('send').disabled=false;$('send').textContent=tr('send');return}const savedText=(text||'')+(uploaded.length?'\\n\\n[المرفقات: '+uploaded.map(x=>x.name+' ('+x.type+', '+x.path+')').join(' | ')+']':'');pendingFiles=[];renderAttachments();$('prompt').value='';$('welcome').style.display='none';$('send').disabled=true;$('send').textContent='…';const {error:saveError}=await db.from('messages').insert({conversation_id:currentConversation,role:'user',content:savedText});if(saveError){alert(tr('sendError')+saveError.message);$('send').disabled=false;$('send').textContent=tr('send');return}addMessage({role:'user',content:savedText});const conversationId=currentConversation;await db.from('conversations').update({updated_at:new Date().toISOString(),title:text.slice(0,45)}).eq('id',conversationId);const pending=document.createElement('div');pending.className='msg assistant';pending.textContent=tr('thinking');pending.id='pendingReply';$('messages').appendChild(pending);$('messages').scrollTop=$('messages').scrollHeight;const {data,error}=await db.functions.invoke('chatmalik-chat',{body:{conversation_id:conversationId,language:currentLang,locale:currentLang,reply_language:currentLang,attachments:uploaded,tool:activeTool}});pending.remove();if(error||!data?.reply){const reason=data?.error||error?.message||tr('genericError');addMessage({role:'assistant',content:tr('replyError')+reason+'\n'+tr('checkKey')})}else{addMessage({role:'assistant',content:data.reply})}await loadConversations();$('send').disabled=false;$('send').textContent=tr('send');$('prompt').focus()}
+
+/* Attachments, camera capture, speech dictation and tool shortcuts */
+let pendingFiles=[],activeTool=null;
+const MAX_UPLOAD_BYTES=20*1024*1024;
+function addFiles(fileList){
+ const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','text/csv','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/msword','application/vnd.ms-excel'];
+ for(const file of Array.from(fileList||[])){
+  if(file.size>MAX_UPLOAD_BYTES){alert('الحد الأقصى لحجم الملف 20 ميغابايت.');continue}
+  if(!allowed.includes(file.type)){alert('نوع الملف غير مدعوم: '+file.name);continue}
+  if(pendingFiles.length>=8){alert('يمكنك إرفاق 8 ملفات كحد أقصى في الرسالة.');break}
+  pendingFiles.push(file);
+ }
+ renderAttachments();
+}
+function renderAttachments(){
+ const box=$('attachmentPreview');box.innerHTML='';
+ pendingFiles.forEach((file,index)=>{
+  const chip=document.createElement('div');chip.className='attachment-chip';
+  if(file.type.startsWith('image/')){const img=document.createElement('img');img.src=URL.createObjectURL(file);img.alt=file.name;chip.appendChild(img)}
+  const name=document.createElement('span');name.textContent=file.name;chip.appendChild(name);
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove attachment');remove.onclick=()=>{pendingFiles.splice(index,1);renderAttachments()};chip.appendChild(remove);box.appendChild(chip);
+ });
+}
+$('pickImages').onclick=()=>$('imageInput').click();
+$('openCamera').onclick=()=>$('cameraInput').click();
+$('pickFiles').onclick=()=>$('fileInput').click();
+$('imageInput').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+$('cameraInput').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+$('fileInput').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+$('plusTools').onclick=()=>$('toolsPanel').classList.toggle('open');
+document.querySelectorAll('[data-tool]').forEach(btn=>btn.onclick=()=>{
+ activeTool=btn.dataset.tool;$('toolsPanel').classList.remove('open');
+ const prompts={web:'ابحث على الإنترنت عن: ',analyze:'حلّل الملف المرفق واشرح أهم ما فيه: ',image:'أريد إنشاء صورة بناءً على الوصف التالي: ',code:'ساعدني في البرمجة وحل المشكلة التالية: '};
+ $('prompt').value=prompts[activeTool]||'';
+ $('toolStatus').textContent=btn.innerText+' — أضف طلبك ثم أرسله.';
+ $('prompt').focus();
+});
+let speechRecognition=null;
+$('voiceInput').onclick=()=>{
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){alert('الإملاء الصوتي غير مدعوم في هذا المتصفح. جرّب Chrome أو استخدم لوحة المفاتيح الصوتية.');return}
+ if(speechRecognition){speechRecognition.stop();speechRecognition=null;$('voiceInput').classList.remove('voice-active');return}
+ speechRecognition=new SR();speechRecognition.lang=currentLang==='zh'?'zh-CN':currentLang==='ja'?'ja-JP':currentLang+'-'+currentLang.toUpperCase();speechRecognition.interimResults=true;
+ $('voiceInput').classList.add('voice-active');speechRecognition.onresult=e=>{let transcript='';for(let i=e.resultIndex;i<e.results.length;i++)transcript+=e.results[i][0].transcript;$('prompt').value=transcript};
+ speechRecognition.onerror=()=>{$('toolStatus').textContent='تعذر تشغيل الإملاء الصوتي.'};
+ speechRecognition.onend=()=>{$('voiceInput').classList.remove('voice-active');speechRecognition=null};
+ speechRecognition.start();
+};
+async function uploadPendingFiles(conversationId){
+ const uploaded=[];
+ for(const file of pendingFiles){
+  const safeName=file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-90)||'attachment';
+  const path=session.user.id+'/'+conversationId+'/'+crypto.randomUUID()+'-'+safeName;
+  const {data,error}=await db.storage.from('chatmalik-attachments').upload(path,file,{contentType:file.type,upsert:false});
+  if(error)throw error;
+  const {data:signed,error:signedError}=await db.storage.from('chatmalik-attachments').createSignedUrl(path,3600);
+  if(signedError)throw signedError;
+  uploaded.push({name:file.name,type:file.type,size:file.size,path,url:signed.signedUrl});
+ }
+ return uploaded;
+}
 $('send').onclick=sendMessage;$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}});$('newChat').onclick=newConversation;$('logout').onclick=async()=>{await db.auth.signOut();currentConversation=null;$('messages').innerHTML='';await refresh()};$('menu').onclick=()=>$('side').classList.toggle('open');
 
 /* ChatMALIK multilingual interface */
@@ -59,7 +155,7 @@ let currentLang='en';
 function detectLanguage(){const saved=localStorage.getItem('chatmalik-language');if(saved&&LANGS.includes(saved))return saved;for(const candidate of (navigator.languages||[navigator.language||'en'])){const code=String(candidate).toLowerCase().split('-')[0];if(LANGS.includes(code))return code;}return 'en';}
 function tr(key){return (I18N[currentLang]&&I18N[currentLang][key])||I18N.en[key]||key;}
 function applyLanguage(lang){if(!LANGS.includes(lang))lang='en';currentLang=lang;localStorage.setItem('chatmalik-language',lang);const rtl=RTL_LANGS.includes(lang);document.documentElement.lang=lang;document.documentElement.dir=rtl?'rtl':'ltr';document.title='ChatMALIK — '+tr('assistant');$('languageSelect').value=lang;
-$('brandTagline').textContent=tr('tagline');$('newChat').textContent=tr('newChat');$('historyTitle').textContent=tr('history');$('logout').textContent=tr('logout');$('assistantTitle').textContent=tr('assistant');$('welcomeTitle').textContent=tr('welcome');$('welcomeText').textContent=tr('welcomeText');$('prompt').placeholder=tr('placeholder');$('send').textContent=tr('send');$('privacyHint').textContent=tr('privacy');$('accountLabel').textContent=tr('account');$('authTitle').textContent=signUpMode?tr('signup'):tr('login');$('authDescription').textContent=tr('authDesc');$('email').placeholder=tr('email');$('password').placeholder=tr('password');$('authSubmit').textContent=signUpMode?tr('signup'):tr('login');$('authSwitch').textContent=signUpMode?tr('switchLogin'):tr('switchSignup');if(!session)$('userEmail').textContent=tr('loggedOut');}
+$('toolsLabel').textContent=rtl?'الأدوات':'Tools';$('imagesLabel').textContent=rtl?'الصور':'Images';$('cameraLabel').textContent=rtl?'الكاميرا':'Camera';$('filesLabel').textContent=rtl?'الملفات':'Files';$('voiceLabel').textContent=rtl?'إملاء صوتي':'Voice';$('webToolLabel').textContent=rtl?'البحث على الإنترنت':'Web search';$('analyzeToolLabel').textContent=rtl?'تحليل الملفات':'File analysis';$('imageToolLabel').textContent=rtl?'إنشاء الصور':'Image creation';$('codeToolLabel').textContent=rtl?'مساعدة البرمجة':'Coding help';$('brandTagline').textContent=tr('tagline');$('newChat').textContent=tr('newChat');$('historyTitle').textContent=tr('history');$('logout').textContent=tr('logout');$('assistantTitle').textContent=tr('assistant');$('welcomeTitle').textContent=tr('welcome');$('welcomeText').textContent=tr('welcomeText');$('prompt').placeholder=tr('placeholder');$('send').textContent=tr('send');$('privacyHint').textContent=tr('privacy');$('accountLabel').textContent=tr('account');$('authTitle').textContent=signUpMode?tr('signup'):tr('login');$('authDescription').textContent=tr('authDesc');$('email').placeholder=tr('email');$('password').placeholder=tr('password');$('authSubmit').textContent=signUpMode?tr('signup'):tr('login');$('authSwitch').textContent=signUpMode?tr('switchLogin'):tr('switchSignup');if(!session)$('userEmail').textContent=tr('loggedOut');}
 $('languageSelect').addEventListener('change',e=>applyLanguage(e.target.value));
 
 applyLanguage(detectLanguage());db.auth.onAuthStateChange(()=>setTimeout(refresh,0));refresh();
