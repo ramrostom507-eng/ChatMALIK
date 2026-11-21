@@ -42,7 +42,7 @@ button,input,textarea{font:inherit}button{cursor:pointer}.shell{min-height:100vh
 <button class="attach-btn" id="voiceInput" type="button">🎙 <span id="voiceLabel">إملاء صوتي</span></button>
 <input id="imageInput" type="file" accept="image/*" multiple hidden>
 <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
-<input id="fileInput" type="file" accept=".pdf,.txt,.csv" multiple hidden>
+<input id="fileInput" type="file" accept=".pdf,.txt,.csv,.md,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.odt,.html,.xml" multiple hidden>
 </div>
 <div class="tools-panel" id="toolsPanel">
 <button class="tool-btn" type="button" data-tool="web">🌐 <span id="webToolLabel">البحث على الإنترنت</span></button>
@@ -76,11 +76,16 @@ async function sendMessage(){if(!session)return;const text=$('prompt').value.tri
 /* Attachments, camera capture, speech dictation and tool shortcuts */
 let pendingFiles=[],activeTool=null;
 const MAX_UPLOAD_BYTES=20*1024*1024;
+function getMime(file){
+ if(file.type)return file.type;
+ const ext=(file.name.split('.').pop()||'').toLowerCase();
+ return ({pdf:'application/pdf',txt:'text/plain',csv:'text/csv',md:'text/markdown',json:'application/json',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',rtf:'application/rtf',odt:'application/vnd.oasis.opendocument.text',html:'text/html',htm:'text/html',xml:'application/xml'})[ext]||'';
+}
 function addFiles(fileList){
- const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','text/csv'];
+ const allowed=['image/jpeg','image/png','image/webp','image/gif','application/pdf','text/plain','text/csv','text/markdown','application/json','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-powerpoint','application/vnd.openxmlformats-officedocument.presentationml.presentation','application/rtf','text/rtf','application/vnd.oasis.opendocument.text','text/html','application/xml','text/xml'];
  for(const file of Array.from(fileList||[])){
   if(file.size>MAX_UPLOAD_BYTES){alert('الحد الأقصى لحجم الملف 20 ميغابايت.');continue}
-  if(!allowed.includes(file.type)){alert('نوع الملف غير مدعوم: '+file.name);continue}
+  const mime=getMime(file);if(!allowed.includes(mime)){alert('نوع الملف غير مدعوم: '+file.name);continue}
   if(pendingFiles.length>=8){alert('يمكنك إرفاق 8 ملفات كحد أقصى في الرسالة.');break}
   pendingFiles.push(file);
  }
@@ -90,7 +95,7 @@ function renderAttachments(){
  const box=$('attachmentPreview');box.innerHTML='';
  pendingFiles.forEach((file,index)=>{
   const chip=document.createElement('div');chip.className='attachment-chip';
-  if(file.type.startsWith('image/')){const img=document.createElement('img');img.src=URL.createObjectURL(file);img.alt=file.name;chip.appendChild(img)}
+  if(getMime(file).startsWith('image/')){const img=document.createElement('img');img.src=URL.createObjectURL(file);img.alt=file.name;chip.appendChild(img)}
   const name=document.createElement('span');name.textContent=file.name;chip.appendChild(name);
   const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove attachment');remove.onclick=()=>{pendingFiles.splice(index,1);renderAttachments()};chip.appendChild(remove);box.appendChild(chip);
  });
@@ -125,12 +130,12 @@ async function uploadPendingFiles(conversationId){
  for(const file of pendingFiles){
   const safeName=file.name.normalize('NFKD').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-90)||'attachment';
   const path=session.user.id+'/'+conversationId+'/'+crypto.randomUUID()+'-'+safeName;
-  const {data,error}=await db.storage.from('chatmalik-attachments').upload(path,file,{contentType:file.type,upsert:false});
+  const {data,error}=await db.storage.from('chatmalik-attachments').upload(path,file,{contentType:getMime(file),upsert:false});
   if(error)throw error;
   const {data:signed,error:signedError}=await db.storage.from('chatmalik-attachments').createSignedUrl(path,3600);
   if(signedError)throw signedError;
-  const textContent=(file.type==='text/plain'||file.type==='text/csv')&&file.size<=120000?await file.text():undefined;
-  uploaded.push({name:file.name,type:file.type,size:file.size,path,url:signed.signedUrl,...(textContent!==undefined?{text_content:textContent}:{})});
+  const textContent=(['text/plain','text/csv'].includes(getMime(file)))&&file.size<=120000?await file.text():undefined;
+  uploaded.push({name:file.name,type:getMime(file),size:file.size,path,url:signed.signedUrl,...(textContent!==undefined?{text_content:textContent}:{})});
  }
  return uploaded;
 }
