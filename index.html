@@ -76,12 +76,24 @@ body.light-theme .settings-field select{background:#f8fafc;color:#172235;border-
 .integration-connect:disabled{opacity:.65;cursor:not-allowed}
 .integration-foot{font-size:12px;line-height:1.7;color:#91a4bc;margin-top:16px;padding:12px;border:1px solid #34465f;border-radius:10px}
 body.light-theme .integrations-card{background:#fff;color:#172235}body.light-theme .integration-item{background:#f8fafc;border-color:#cbd5e1}body.light-theme .integration-title{color:#172235}body.light-theme .integration-desc,body.light-theme .integrations-intro,body.light-theme .integration-foot{color:#526176}
+
+.plus-btn{background:linear-gradient(135deg,#f2d99e,#c99a4c);color:#172235;border:1px solid #f4dfad;padding:9px 13px;border-radius:10px;font-weight:900;box-shadow:0 5px 18px #c99a4c33;white-space:nowrap}
+.plus-btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.plus-panel{display:none;position:fixed;inset:0;z-index:120;background:#050a13eF;padding:16px;overflow:auto;place-items:center}
+.plus-card{width:min(480px,100%);background:#111c2e;border:1px solid #b89454;border-radius:20px;padding:24px;box-shadow:0 25px 90px #000b;text-align:center}
+.plus-mark{width:58px;height:58px;border-radius:18px;margin:0 auto 12px;display:grid;place-items:center;background:linear-gradient(135deg,#f2d99e,#b8873d);color:#172235;font-size:28px;font-weight:900}
+.plus-card h2{margin:0 0 8px;color:#f2d99e}.plus-card p{color:#b9c7d8;line-height:1.8;font-size:14px}
+.plus-list{text-align:right;line-height:2;color:#e4edf8;font-size:13px;padding:0 20px}
+.plus-actions{display:flex;gap:9px;margin-top:18px}.plus-actions button{flex:1;padding:11px;border-radius:10px;font-weight:800}
+.plus-soon{background:#d8b56d;color:#172235;border:0}.plus-close{background:#17243a;color:#edf3fb;border:1px solid #34465f}
+body.light-theme .plus-card{background:#fff;color:#172235}body.light-theme .plus-card p{color:#526176}body.light-theme .plus-list{color:#172235}
+@media(max-width:720px){.top{gap:6px;flex-wrap:wrap;height:auto;min-height:66px;padding:10px}.plus-btn{padding:7px 9px;font-size:12px}.settings-btn{padding:7px 9px;font-size:12px}}
 </style></head>
 <body>
 <div class="shell">
 <aside class="side" id="side"><div class="brand"><div class="logo">M</div><div><strong>ChatMALIK</strong><small id="brandTagline">ذكاء يساعدك كل يوم</small></div></div>
 <button class="new" id="newChat">＋ محادثة جديدة</button><h4 id="historyTitle">محادثاتك</h4><div class="history" id="history"></div><div class="userbox"><div id="userEmail">غير مسجل الدخول</div><button class="ghost" id="logout" style="margin-top:10px;display:none">تسجيل الخروج</button></div></aside>
-<main class="main"><header class="top"><div><button class="mobilemenu" id="menu">☰</button> <b id="assistantTitle">المساعد الذكي</b></div><button class="settings-btn" id="integrationsButton" type="button">🔗 التطبيقات</button><button class="settings-btn" id="settingsButton" type="button">⚙ الإعدادات</button><button class="admin-btn" id="adminButton" type="button">⚙ الإدارة</button><select id="languageSelect" class="lang-select" aria-label="Language"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="zh">中文</option><option value="ja">日本語</option></select></header>
+<main class="main"><header class="top"><div><button class="mobilemenu" id="menu">☰</button> <b id="assistantTitle">المساعد الذكي</b></div><button class="plus-btn" id="plusSubscribeButton" type="button">✦ اشترك في Plus</button><button class="settings-btn" id="integrationsButton" type="button">🔗 التطبيقات</button><button class="settings-btn" id="settingsButton" type="button">⚙ الإعدادات</button><button class="admin-btn" id="adminButton" type="button">⚙ الإدارة</button><select id="languageSelect" class="lang-select" aria-label="Language"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="zh">中文</option><option value="ja">日本語</option></select></header>
 <section class="content"><div class="welcome" id="welcome"><div class="orb">M</div><h1 id="welcomeTitle">أهلاً بك في ChatMALIK</h1><p id="welcomeText">مساحة محادثاتك الذكية — ابدأ محادثة جديدة</p></div><div class="messages" id="messages"></div>
 <div class="composer">
 <div class="attach-preview" id="attachmentPreview"></div>
@@ -342,4 +354,25 @@ async function recordChatMALIKVisit(){
 recordChatMALIKVisit();
 
 applyLanguage(detectLanguage());db.auth.onAuthStateChange(()=>setTimeout(refresh,0));refresh();
+
+<div class="plus-panel" id="plusPanel" role="dialog" aria-modal="true" aria-labelledby="plusTitle">
+ <div class="plus-card">
+  <div class="plus-mark">✦</div>
+  <h2 id="plusTitle">ChatMALIK Plus</h2>
+  <p>ارتقِ بتجربتك مع الخطة المتقدمة من ChatMALIK.</p>
+  <ul class="plus-list">
+   <li>تجربة استخدام متقدمة ومزايا إضافية عند تفعيلها</li>
+   <li>أولوية الوصول إلى الأدوات المدعومة ضمن حدود الاستخدام</li>
+   <li>إدارة اشتراكك من حسابك</li>
+  </ul>
+  <p><strong>الاشتراك والدفع الإلكتروني قيد التجهيز.</strong><br>لن يتم تحصيل أي مبلغ قبل إعلان السعر وتفعيل بوابة دفع آمنة.</p>
+  <div class="plus-actions"><button class="plus-soon" id="plusNotifyButton" type="button">قريباً</button><button class="plus-close" id="plusCloseButton" type="button">إغلاق</button></div>
+ </div>
+</div>
+<script>
+const plusPanel=$('plusPanel');
+$('plusSubscribeButton').addEventListener('click',()=>{plusPanel.style.display='grid';});
+$('plusCloseButton').addEventListener('click',()=>{plusPanel.style.display='none';});
+$('plusNotifyButton').addEventListener('click',()=>{alert('سيتم فتح الاشتراك بعد تحديد السعر وتفعيل الدفع الآمن.');});
+plusPanel.addEventListener('click',e=>{if(e.target===plusPanel)plusPanel.style.display='none';});
 </script></body></html>
