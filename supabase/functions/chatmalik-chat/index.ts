@@ -33,8 +33,11 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY");
     const groqKey = Deno.env.get("GROQ_API_KEY");
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const cloudflareAccountId = Deno.env.get("CLOUDFLARE_ACCOUNT_ID");
+    const cloudflareApiToken = Deno.env.get("CLOUDFLARE_API_TOKEN");
     if (!supabaseUrl || !supabaseKey) return json({ error: "إعدادات Supabase غير مكتملة." }, 500);
-    if (!groqKey) return json({ error: "مفتاح GROQ_API_KEY غير مضاف إلى أسرار Supabase." }, 503);
+    if (!cloudflareApiToken && !groqKey && !geminiKey) return json({ error: "لا يوجد مزود ذكاء اصطناعي مفعّل. تحقق من أسرار Cloudflare أو Groq أو Gemini في Supabase." }, 503);
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
@@ -132,37 +135,34 @@ Deno.serve(async (req: Request) => {
     }
 
 
-    // Image provider routing: prefer Gemini (Nano Banana 2); retain OpenAI as a temporary fallback.
+    // Image generation uses Gemini only. No paid-provider fallback is allowed.
     const imageIntent = body?.tool === "image" ||
       /(?:أنشئ|انشئ|إنشاء|انشاء|اصنع|ولّد|ولد|توليد|صمّم صورة|صمم صورة|عدّل الصورة|عدل الصورة|تعديل الصورة|ادمج الصور|ارسم صورة|generate an image|create an image|make an image|edit (?:this |the )?image|edit (?:my )?photo|combine (?:these )?photos|merge (?:these )?images|créer une image|générer une image|modifier cette image|erstelle ein bild|bild bearbeiten|crear una imagen|generar una imagen|editar esta imagen)/i.test(latestUserText);
     if (imageIntent) {
-      const geminiKey = Deno.env.get("GEMINI_API_KEY");
-      const openaiKey = Deno.env.get("OPENAI_API_KEY");
+      if (!geminiKey) return json({ error: "ميزة إنشاء الصور تحتاج GEMINI_API_KEY. لم يتم تشغيل أي مزود مدفوع بديل." }, 503);
       const imageAttachments = requestedAttachments.filter((a: any) => typeof a?.type === "string" && a.type.startsWith("image/"));
       const prompt = latestUserText.slice(0, 4000);
-      let imageBytes: Uint8Array;
-      let outputMime = "image/png";
-      let provider = "gemini";
+      let imageProvider = "gemini";
+      const parts: any[] = [{ text: prompt }];
 
-      if (geminiKey) {
-        // Gemini REST generateContent accepts text and uploaded image bytes in the same request.
-        const parts: any[] = [{ text: prompt }];
-        for (const attachment of imageAttachments) {
-          const { data: signed, error: signedErr } = await supabase.storage
-            .from("chatmalik-attachments").createSignedUrl(attachment.path, 300);
-          if (signedErr || !signed?.signedUrl) return json({ error: "تعذر فتح الصورة المرفقة لتعديلها." }, 400);
-          const sourceImage = await fetch(signed.signedUrl);
-          if (!sourceImage.ok) return json({ error: "تعذر تحميل الصورة الأصلية." }, 400);
-          const bytes = new Uint8Array(await sourceImage.arrayBuffer());
-          if (bytes.length > 12 * 1024 * 1024) return json({ error: "حجم الصورة المرفقة يتجاوز 12 ميغابايت." }, 413);
-          let binary = "";
-          for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-            binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
-          }
-          parts.push({ inline_data: { mime_type: attachment.type, data: btoa(binary) } });
+      for (const attachment of imageAttachments) {
+        const { data: signed, error: signedErr } = await supabase.storage
+          .from("chatmalik-attachments").createSignedUrl(attachment.path, 300);
+        if (signedErr || !signed?.signedUrl) return json({ error: "تعذر فتح الصورة المرفقة لتعديلها." }, 400);
+        const sourceImage = await fetch(signed.signedUrl);
+        if (!sourceImage.ok) return json({ error: "تعذر تحميل الصورة الأصلية." }, 400);
+        const bytes = new Uint8Array(await sourceImage.arrayBuffer());
+        if (bytes.length > 12 * 1024 * 1024) return json({ error: "حجم الصورة المرفقة يتجاوز 12 ميغابايت." }, 413);
+        let binary = "";
+        for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+          binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
         }
+        parts.push({ inline_data: { mime_type: attachment.type, data: btoa(binary) } });
+      }
 
-        const geminiResponse = await fetch(
+      let geminiResponse: Response;
+      try {
+        geminiResponse = await fetch(
           "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent",
           {
             method: "POST",
@@ -176,73 +176,68 @@ Deno.serve(async (req: Request) => {
             }),
           },
         );
-        const geminiResult = await geminiResponse.json().catch(() => ({}));
-        if (!geminiResponse.ok) {
-          const detail = geminiResult?.error?.message || "رفض Gemini تنفيذ طلب الصورة.";
-          console.error("Gemini image API error:", geminiResponse.status, detail);
-          if (geminiResponse.status === 400 || geminiResponse.status === 403) {
-            return json({ error: "رفض Google طلب الصورة. تحقق من صلاحية GEMINI_API_KEY وتفعيل Gemini API: " + detail }, 502);
-          }
-          if (geminiResponse.status === 429) return json({ error: "تم بلوغ حد استخدام Gemini للصور. تحقق من الحصة والفوترة ثم حاول لاحقاً." }, 429);
-          return json({ error: "تعذر إنشاء الصورة عبر Gemini: " + detail }, 502);
-        }
-
-        const outputParts = geminiResult?.candidates?.[0]?.content?.parts || [];
-        const imagePart = outputParts.find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
-        const encoded = imagePart?.inlineData?.data || imagePart?.inline_data?.data;
-        outputMime = imagePart?.inlineData?.mimeType || imagePart?.inline_data?.mime_type || "image/png";
-        if (typeof encoded !== "string" || !encoded.length) {
-          const blockReason = geminiResult?.promptFeedback?.blockReason;
-          return json({ error: blockReason ? "رفض Gemini الطلب بسبب سياسة السلامة: " + blockReason : "لم يُرجع Gemini ملف صورة صالحاً. أعد صياغة الوصف وحاول مجدداً." }, 502);
-        }
-        const binary = atob(encoded);
-        imageBytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) imageBytes[i] = binary.charCodeAt(i);
-      } else if (openaiKey) {
-        // Temporary fallback keeps the current image service working until GEMINI_API_KEY is configured.
-        provider = "openai-fallback";
-        let imageResponse: Response;
-        if (imageAttachments.length) {
-          const form = new FormData();
-          form.append("model", "gpt-image-1");
-          form.append("prompt", prompt);
-          form.append("size", "1024x1024");
-          form.append("quality", "medium");
-          form.append("output_format", "png");
-          for (const attachment of imageAttachments) {
-            const { data: signed, error: signedErr } = await supabase.storage.from("chatmalik-attachments").createSignedUrl(attachment.path, 300);
-            if (signedErr || !signed?.signedUrl) return json({ error: "تعذر فتح الصورة المرفقة لتعديلها." }, 400);
-            const sourceImage = await fetch(signed.signedUrl);
-            if (!sourceImage.ok) return json({ error: "تعذر تحميل الصورة الأصلية." }, 400);
-            const bytes = new Uint8Array(await sourceImage.arrayBuffer());
-            form.append("image[]", new Blob([bytes], { type: attachment.type }), attachment.name || "reference.png");
-          }
-          imageResponse = await fetch("https://api.openai.com/v1/images/edits", {
-            method: "POST", headers: { "Authorization": `Bearer ${openaiKey}` }, body: form,
-          });
-        } else {
-          imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${openaiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1024x1024", quality: "medium", output_format: "png", n: 1 }),
-          });
-        }
-        const imageResult = await imageResponse.json().catch(() => ({}));
-        if (!imageResponse.ok) {
-          const detail = imageResult?.error?.message || "رفضت خدمة الصور تنفيذ الطلب.";
-          console.error("OpenAI fallback image API error:", imageResponse.status, detail);
-          if (imageResponse.status === 401) return json({ error: "مفتاح OPENAI_API_KEY غير صالح أو لا يملك صلاحية الصور." }, 502);
-          if (imageResponse.status === 429) return json({ error: "تم بلوغ حد استخدام خدمة الصور أو لا يوجد رصيد كافٍ." }, 429);
-          return json({ error: "تعذر إنشاء الصورة: " + detail }, 502);
-        }
-        const encoded = imageResult?.data?.[0]?.b64_json;
-        if (typeof encoded !== "string" || !encoded.length) return json({ error: "لم تُرجع خدمة الصور ملفاً صالحاً." }, 502);
-        const binary = atob(encoded);
-        imageBytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) imageBytes[i] = binary.charCodeAt(i);
-      } else {
-        return json({ error: "ميزة الصور جاهزة للانتقال إلى Gemini. أضف GEMINI_API_KEY في أسرار Supabase لتفعيلها؛ لم يتم تغيير محرك المحادثات النصية." }, 503);
+      } catch (error) {
+        console.error("Gemini image request failed:", error);
+        return json({ error: "تعذر الاتصال بخدمة Gemini للصور. حاول مجدداً لاحقاً." }, 503);
       }
+
+      const geminiResult = await geminiResponse.json().catch(() => ({}));
+      if (!geminiResponse.ok) {
+        const detail = geminiResult?.error?.message || "رفض Gemini تنفيذ طلب الصورة.";
+        console.error("Gemini image API error:", geminiResponse.status, detail);
+        if (geminiResponse.status === 429) {
+          const cloudflareEnabled = Deno.env.get("CLOUDFLARE_IMAGE_FALLBACK_ENABLED") === "true";
+          if (cloudflareEnabled && cloudflareAccountId && cloudflareApiToken && imageAttachments.length === 0) {
+            try {
+              const fallbackResponse = await fetch(
+                `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+                {
+                  method: "POST",
+                  headers: { "Authorization": `Bearer ${cloudflareApiToken}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({ prompt: prompt.slice(0, 2048), steps: 4 }),
+                },
+              );
+              const fallbackResult = await fallbackResponse.json().catch(() => ({}));
+              const fallbackImage = fallbackResult?.result?.image;
+              if (fallbackResponse.ok && typeof fallbackImage === "string" && fallbackImage.length > 0) {
+                const fallbackBinary = atob(fallbackImage);
+                imageBytes = new Uint8Array(fallbackBinary.length);
+                for (let i = 0; i < fallbackBinary.length; i++) imageBytes[i] = fallbackBinary.charCodeAt(i);
+                outputMime = "image/jpeg";
+                imageProvider = "cloudflare-flux-schnell";
+              } else {
+                console.error("Cloudflare image fallback failed:", fallbackResponse.status, fallbackResult?.errors || "No image returned");
+                return json({ error: "انتهت حصة Gemini، وتعذر استخدام البديل Cloudflare. تحقق من ربطه وصلاحية Workers AI ثم حاول لاحقاً." }, 503);
+              }
+            } catch (fallbackError) {
+              console.error("Cloudflare image fallback request failed:", fallbackError);
+              return json({ error: "انتهت حصة Gemini وتعذر الاتصال ببديل Cloudflare حالياً." }, 503);
+            }
+          } else {
+            const reason = imageAttachments.length
+              ? "البديل الاحتياطي لا يدعم تعديل الصور المرفقة حالياً."
+              : "البديل الاحتياطي غير مفعّل أو لم تُضف بيانات ربطه بعد.";
+            return json({ error: "تم بلوغ حصة Gemini المجانية. " + reason + " لم يتم تشغيل أي خدمة بديلة أو مدفوعة تلقائياً." }, 429);
+          }
+        }
+        if (geminiResponse.status === 400 || geminiResponse.status === 403) {
+          return json({ error: "رفض Google طلب الصورة. تحقق من صلاحية GEMINI_API_KEY وإتاحة النموذج في حسابك." }, 502);
+        }
+        return json({ error: "تعذر إنشاء الصورة عبر Gemini حالياً." }, 502);
+      }
+
+      const outputParts = geminiResult?.candidates?.[0]?.content?.parts || [];
+      const imagePart = outputParts.find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
+      const encoded = imagePart?.inlineData?.data || imagePart?.inline_data?.data;
+      const outputMime = imagePart?.inlineData?.mimeType || imagePart?.inline_data?.mime_type || "image/png";
+      if (typeof encoded !== "string" || !encoded.length) {
+        const blockReason = geminiResult?.promptFeedback?.blockReason;
+        return json({ error: blockReason ? "رفض Gemini الطلب بسبب سياسة السلامة: " + blockReason : "لم يُرجع Gemini ملف صورة صالحاً. أعد صياغة الوصف وحاول مجدداً." }, 502);
+      }
+
+      const binary = atob(encoded);
+      const imageBytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) imageBytes[i] = binary.charCodeAt(i);
 
       const extension = outputMime.includes("jpeg") || outputMime.includes("jpg") ? "jpg" : outputMime.includes("webp") ? "webp" : "png";
       const imagePath = userData.user.id + "/" + conversationId + "/" + crypto.randomUUID() + "-generated." + extension;
@@ -260,7 +255,7 @@ Deno.serve(async (req: Request) => {
         console.error("Generated image message save error:", imageMessageError);
         return json({ error: "تم إنشاء الصورة لكن تعذر حفظها ضمن سجل المحادثة." }, 500);
       }
-      return json({ reply: imageReply, attachments: [imageAttachment], image_provider: provider });
+      return json({ reply: imageReply, attachments: [imageAttachment], image_provider: imageProvider });
     }
 
     const responseInput = history.map((m: { role: string; content: string }, index: number) => ({
@@ -284,36 +279,176 @@ Deno.serve(async (req: Request) => {
 إذا طلب المستخدم صراحةً إجابة بلغة أخرى، اتبع طلبه.
 تعامل بطلاقة مع العربية والإنجليزية والفرنسية والألمانية والإسبانية والتركية والإيطالية والبرتغالية والروسية والصينية واليابانية، ومع اللغات الأخرى التي تستطيع فهمها.
 استخدم أسلوباً طبيعياً وسليماً في اللغة المختارة، ولا تخلط اللغات دون حاجة.
-كن دقيقاً وعملياً ومنظماً. إذا لم تعرف معلومة فقل ذلك ولا تختلق حقائق أو مصادر.
 ${styleInstructions[selectedStyle] || styleInstructions.balanced}
 ${lengthInstructions[selectedLength] || lengthInstructions.balanced}
+كن دقيقاً وعملياً ومنظماً. إذا لم تعرف معلومة فقل ذلك ولا تختلق حقائق أو مصادر.
 في الأسئلة الطبية أو القانونية أو المالية وضّح حدود المساعدة ولا تدّعِ أنك مختص مرخّص.
 لا تدّعِ امتلاك وصول مباشر إلى الإنترنت أو ملفات أو حسابات المستخدم إلا إذا زُوّدت بها فعلاً.
 حافظ على سياق المحادثة الحالية، واستفد من ذاكرة المستخدم المرفقة إذا كانت ذات صلة.
 إذا سألك المستخدم "أين كنا؟" أو عن شيء سابق، استخدم الذاكرة المتاحة وسياق الرسائل. إذا لم تجد المعلومة فقل بوضوح ما الذي تستطيع استرجاعه وما الذي لا تستطيع.
 ${memoryInstructions}`;
 
-    const aiResponse = await fetch("https://api.groq.com/openai/v1/responses", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${groqKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        instructions,
-        input: responseInput,
-        ...(responseTools.length ? { tools: responseTools } : {}),
-        max_output_tokens: 900,
-        store: false,
-      }),
-    });
+    let result: any = {};
+    let provider = "cloudflare";
+    let groqFailureStatus = 0;
+    let groqFailureMessage = "";
 
-    const result = await aiResponse.json().catch(() => ({}));
-    if (!aiResponse.ok) {
-      const apiMessage = result?.error?.message || "رفض مزود الذكاء الاصطناعي الطلب.";
-      if (aiResponse.status === 429) {
-        console.warn("Groq rate limit reached:", apiMessage);
-        return json({ error: "تم بلوغ الحد المجاني المؤقت لخدمة الذكاء الاصطناعي. انتظر دقيقة أو دقيقتين ثم أعد إرسال رسالتك. لم يتم خصم أي مبلغ." }, 429);
+    // Cloudflare Workers AI is the primary text provider. Keep Groq/Gemini as fallbacks.
+    // The selected Llama model is text-only, so image requests continue through the existing providers.
+    if (cloudflareAccountId && cloudflareApiToken && !hasImage && !responseTools.length) {
+      try {
+        const cloudflareResponse = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/ai/v1/chat/completions`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${cloudflareApiToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+              messages: [
+                { role: "system", content: instructions },
+                ...responseInput,
+              ],
+              max_tokens: 900,
+              temperature: 0.7,
+              stream: false,
+            }),
+            signal: AbortSignal.timeout(45000),
+          },
+        );
+        const cloudflareResult = await cloudflareResponse.json().catch(() => ({}));
+        if (!cloudflareResponse.ok) {
+          console.error("Cloudflare Workers AI error:", cloudflareResponse.status, cloudflareResult?.errors?.[0]?.message || "request failed");
+          groqFailureStatus = 503;
+          groqFailureMessage = "Cloudflare Workers AI request failed.";
+        } else {
+          const cloudflareText = cloudflareResult?.choices?.[0]?.message?.content;
+          const normalizedText = typeof cloudflareText === "string"
+            ? cloudflareText.trim()
+            : Array.isArray(cloudflareText)
+              ? cloudflareText.map((part: any) => typeof part?.text === "string" ? part.text : "").join("\n").trim()
+              : "";
+          if (normalizedText) {
+            result = { output: [{ content: [{ type: "output_text", text: normalizedText }] }] };
+            provider = "cloudflare";
+          } else {
+            console.error("Cloudflare Workers AI returned an empty response.");
+            groqFailureStatus = 503;
+            groqFailureMessage = "Cloudflare Workers AI returned an empty response.";
+          }
+        }
+      } catch (error) {
+        console.warn("Cloudflare Workers AI request failed; trying configured fallback providers.", error);
+        groqFailureStatus = 503;
+        groqFailureMessage = error instanceof Error ? error.message : "Cloudflare Workers AI connection failed.";
       }
-      return json({ error: apiMessage }, 502);
+    }
+
+    if (!result.output?.length && groqKey) {
+      try {
+        const aiResponse = await fetch("https://api.groq.com/openai/v1/responses", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${groqKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            instructions,
+            input: responseInput,
+            ...(responseTools.length ? { tools: responseTools } : {}),
+            max_output_tokens: 900,
+            store: false,
+          }),
+          signal: AbortSignal.timeout(45000),
+        });
+        result = await aiResponse.json().catch(() => ({}));
+        if (!aiResponse.ok) {
+          groqFailureStatus = aiResponse.status;
+          groqFailureMessage = result?.error?.message || "تعذر إكمال الطلب عبر Groq.";
+        }
+      } catch (error) {
+        groqFailureStatus = 503;
+        groqFailureMessage = error instanceof Error ? error.message : "تعذر الاتصال بخدمة Groq.";
+        console.warn("Groq request failed; attempting Gemini fallback.");
+      }
+    } else if (!result.output?.length) {
+      groqFailureStatus = groqFailureStatus || 503;
+      groqFailureMessage = groqFailureMessage || "لم يتم إعداد مزود Groq احتياطي.";
+    }
+
+    // Gemini is the final fallback when Cloudflare/Groq is unavailable or rate-limited.
+    if (groqFailureStatus) {
+      const retryable = groqFailureStatus === 408 || groqFailureStatus === 429 || groqFailureStatus >= 500;
+      if (!retryable) {
+        console.error("Groq request rejected:", groqFailureStatus, groqFailureMessage);
+        return json({ error: "تعذر تنفيذ الطلب عبر مزود المحادثة. حاول مجدداً." }, 502);
+      }
+      if (!geminiKey) {
+        if (groqFailureStatus === 429) {
+          return json({ error: "تم بلوغ حد الاستخدام لدى مزودي الذكاء الاصطناعي المتاحين حالياً. حاول مجدداً لاحقاً." }, 429);
+        }
+        return json({ error: "تعذّر الوصول إلى Cloudflare أو Groq، كما أن مزود Gemini الاحتياطي غير مهيأ." }, 503);
+      }
+
+      // Gemini fallback supports both text and image understanding using the user's existing private attachments.
+      const geminiContents = history.map((m: { role: string; content: string }, index: number) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: index === history.length - 1 && m.role === "user"
+          ? [{ text: latestUserText }]
+          : [{ text: typeof m.content === "string" ? m.content : "" }],
+      }));
+      if (requestedAttachments.length) {
+        const latestParts: any[] = [{ text: latestUserText }];
+        for (const attachment of requestedAttachments) {
+          if (typeof attachment?.type === "string" && attachment.type.startsWith("image/")) {
+            const { data: signed, error: signedErr } = await supabase.storage
+              .from("chatmalik-attachments").createSignedUrl(attachment.path, 300);
+            if (signedErr || !signed?.signedUrl) return json({ error: "تعذر فتح الصورة المرفقة للمحرك الاحتياطي." }, 400);
+            const imageResponse = await fetch(signed.signedUrl);
+            if (!imageResponse.ok) return json({ error: "تعذر تحميل الصورة للمحرك الاحتياطي." }, 400);
+            const imageBytes = new Uint8Array(await imageResponse.arrayBuffer());
+            if (imageBytes.length > 12 * 1024 * 1024) return json({ error: "حجم الصورة المرفقة يتجاوز 12 ميغابايت." }, 413);
+            let binary = "";
+            for (let offset = 0; offset < imageBytes.length; offset += 0x8000) {
+              binary += String.fromCharCode(...imageBytes.subarray(offset, Math.min(offset + 0x8000, imageBytes.length)));
+            }
+            latestParts.push({ inlineData: { mimeType: attachment.type, data: btoa(binary) } });
+          } else if (typeof attachment?.text_content === "string") {
+            if (attachment.text_content.length > 120000) return json({ error: "الملف النصي أكبر من الحد المسموح للتحليل." }, 413);
+            latestParts.push({ text: "محتوى الملف " + String(attachment.name || "attachment").slice(0, 160) + ":\n" + attachment.text_content });
+          }
+        }
+        geminiContents[geminiContents.length - 1].parts = latestParts;
+      }
+      try {
+        const geminiResponse = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+          {
+            method: "POST",
+            headers: { "x-goog-api-key": geminiKey, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: instructions }] },
+              contents: geminiContents,
+              generationConfig: { maxOutputTokens: 900, temperature: 0.7 },
+            }),
+            signal: AbortSignal.timeout(45000),
+          },
+        );
+        const geminiResult = await geminiResponse.json().catch(() => ({}));
+        if (!geminiResponse.ok) {
+          console.error("Gemini text fallback error:", geminiResponse.status, geminiResult?.error?.message || "request failed");
+          if (geminiResponse.status === 429) return json({ error: "تم بلوغ الحصة المجانية المؤقتة لدى Groq وGemini. انتظر تجدد الحصة ثم حاول مجدداً. لا توجد أي خدمة مدفوعة تعمل كبديل." }, 429);
+          return json({ error: "تعذر على مزود Gemini الاحتياطي تنفيذ الطلب حالياً. لم يتم استخدام أي مزود مدفوع." }, 503);
+        }
+        const candidateParts = geminiResult?.candidates?.[0]?.content?.parts || [];
+        const geminiText = candidateParts.filter((p: any) => typeof p?.text === "string").map((p: any) => p.text).join("\n").trim();
+        if (!geminiText) return json({ error: "وصل رد فارغ من مزود Gemini الاحتياطي." }, 502);
+        result = { output: [{ content: [{ type: "output_text", text: geminiText }] }] };
+        provider = "gemini";
+      } catch (error) {
+        console.error("Gemini text fallback request failed:", error);
+        return json({ error: "تعذر الاتصال بمزود Gemini الاحتياطي. حاول مجدداً لاحقاً." }, 503);
+      }
     }
 
     const reply = extractOutputText(result);
@@ -328,7 +463,7 @@ ${memoryInstructions}`;
 
     // Automatic AI memory summarization is paused to avoid a second provider request per message. Existing private memory is still loaded above.
 
-    return json({ reply });
+    return json({ reply, ai_provider: provider });
   } catch (error) {
     console.error("chatmalik-chat error:", error);
     return json({ error: "حدث خطأ داخلي غير متوقع. حاول مجدداً." }, 500);
