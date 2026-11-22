@@ -57,6 +57,21 @@ Deno.serve(async (req: Request) => {
       ? languageNames[body.reply_language.slice(0, 2)] || "غير محددة"
       : "غير محددة";
 
+    const preferences = body?.preferences && typeof body.preferences === "object" ? body.preferences : {};
+    const styleInstructions: Record<string, string> = {
+      balanced: "استخدم أسلوباً متوازناً وودوداً.",
+      professional: "استخدم أسلوباً احترافياً ورسمياً مع تنظيم واضح.",
+      friendly: "استخدم أسلوباً ودوداً وبسيطاً وقريباً من المستخدم.",
+      creative: "استخدم أسلوباً إبداعياً مع أفكار متنوعة عند ملاءمة ذلك.",
+    };
+    const lengthInstructions: Record<string, string> = {
+      balanced: "اجعل طول الإجابة متوسطاً مع تغطية النقاط المهمة.",
+      concise: "قدّم إجابات مختصرة ومباشرة مع الحفاظ على الدقة.",
+      detailed: "قدّم إجابات مفصلة ومنظمة مع شرح الخطوات والأمثلة عند الحاجة.",
+    };
+    const selectedStyle = typeof preferences.style === "string" ? preferences.style : "balanced";
+    const selectedLength = typeof preferences.length === "string" ? preferences.length : "balanced";
+
     const { data: conversation, error: conversationError } = await supabase
       .from("conversations")
       .select("id")
@@ -270,6 +285,8 @@ Deno.serve(async (req: Request) => {
 تعامل بطلاقة مع العربية والإنجليزية والفرنسية والألمانية والإسبانية والتركية والإيطالية والبرتغالية والروسية والصينية واليابانية، ومع اللغات الأخرى التي تستطيع فهمها.
 استخدم أسلوباً طبيعياً وسليماً في اللغة المختارة، ولا تخلط اللغات دون حاجة.
 كن دقيقاً وعملياً ومنظماً. إذا لم تعرف معلومة فقل ذلك ولا تختلق حقائق أو مصادر.
+${styleInstructions[selectedStyle] || styleInstructions.balanced}
+${lengthInstructions[selectedLength] || lengthInstructions.balanced}
 في الأسئلة الطبية أو القانونية أو المالية وضّح حدود المساعدة ولا تدّعِ أنك مختص مرخّص.
 لا تدّعِ امتلاك وصول مباشر إلى الإنترنت أو ملفات أو حسابات المستخدم إلا إذا زُوّدت بها فعلاً.
 حافظ على سياق المحادثة الحالية، واستفد من ذاكرة المستخدم المرفقة إذا كانت ذات صلة.
