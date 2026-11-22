@@ -277,5 +277,6 @@ async function recordChatMALIKVisit(){
  }catch(e){console.warn('Visit tracking unavailable',e);}
 }
 recordChatMALIKVisit();
-\napplyLanguage(detectLanguage());db.auth.onAuthStateChange(()=>setTimeout(refresh,0));refresh();
+
+applyLanguage(detectLanguage());db.auth.onAuthStateChange(()=>setTimeout(refresh,0));refresh();
 </script></body></html>
