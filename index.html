@@ -25,12 +25,27 @@ button,input,textarea{font:inherit}button{cursor:pointer}.shell{min-height:100vh
 .voice-active{border-color:#d96c6c!important;color:#ffaaaa!important}
 .tool-status{font-size:11px;color:var(--muted);padding:2px 5px}
 @media(max-width:520px){.attach-btn{padding:8px 9px;font-size:12px}.attach-actions{gap:5px}.composebox{gap:6px;padding:8px}.send{padding:11px 12px}}
+
+.admin-btn{display:none;background:#d8b56d;color:#172235;border:0;padding:8px 12px;border-radius:9px;font-weight:800;margin-inline-end:8px}
+.admin-panel{display:none;position:fixed;inset:0;z-index:8;background:#050a13dd;padding:18px;overflow:auto;place-items:center}
+.admin-card{width:min(560px,100%);max-height:90vh;overflow:auto;background:#111c2e;border:1px solid #40536d;border-radius:18px;padding:20px;box-shadow:0 25px 90px #000b}
+.admin-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:16px 0}
+.admin-stat{background:#17243a;border:1px solid #34465f;border-radius:12px;padding:12px;text-align:center}
+.admin-stat strong{display:block;font-size:24px;color:#f0d18d}
+.admin-list{display:grid;gap:8px;margin-top:12px}
+.admin-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#17243a;padding:9px 11px;border-radius:9px;overflow-wrap:anywhere}
+.admin-row button{background:#542d35;color:#ffd8dc;border:1px solid #81414d;border-radius:8px;padding:6px 9px}
+.admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.admin-actions button{background:#d8b56d;color:#172235;border:0;padding:10px 13px;border-radius:9px;font-weight:700}
+.admin-note{color:#9aabc2;font-size:12px;line-height:1.6;margin-top:12px}
+@media(max-width:480px){.admin-stats{grid-template-columns:1fr}.admin-btn{padding:7px 9px;font-size:12px}}
 </style></head>
 <body>
 <div class="shell">
 <aside class="side" id="side"><div class="brand"><div class="logo">M</div><div><strong>ChatMALIK</strong><small id="brandTagline">ذكاء يساعدك كل يوم</small></div></div>
 <button class="new" id="newChat">＋ محادثة جديدة</button><h4 id="historyTitle">محادثاتك</h4><div class="history" id="history"></div><div class="userbox"><div id="userEmail">غير مسجل الدخول</div><button class="ghost" id="logout" style="margin-top:10px;display:none">تسجيل الخروج</button></div></aside>
-<main class="main"><header class="top"><div><button class="mobilemenu" id="menu">☰</button> <b id="assistantTitle">المساعد الذكي</b></div><select id="languageSelect" class="lang-select" aria-label="Language"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="zh">中文</option><option value="ja">日本語</option></select></header>
+<main class="main"><header class="top"><div><button class="mobilemenu" id="menu">☰</button> <b id="assistantTitle">المساعد الذكي</b></div><button class="admin-btn" id="adminButton" type="button">⚙ الإدارة</button><select id="languageSelect" class="lang-select" aria-label="Language"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="zh">中文</option><option value="ja">日本語</option></select></header>
 <section class="content"><div class="welcome" id="welcome"><div class="orb">M</div><h1 id="welcomeTitle">أهلاً بك في ChatMALIK</h1><p id="welcomeText">مساحة محادثاتك الذكية — ابدأ محادثة جديدة</p></div><div class="messages" id="messages"></div>
 <div class="composer">
 <div class="attach-preview" id="attachmentPreview"></div>
@@ -54,7 +69,7 @@ button,input,textarea{font:inherit}button{cursor:pointer}.shell{min-height:100vh
 <div class="composebox"><textarea id="prompt" rows="1" placeholder="اكتب رسالتك هنا..."></textarea><button class="send" id="send">إرسال ↑</button></div>
 <div class="tool-status" id="toolStatus"></div>
 <div class="hint" id="privacyHint">لا تشارك كلمات المرور أو المعلومات الحساسة في المحادثة.</div></div></section></main></div>
-<div class="authwrap" id="auth"><div class="auth"><div class="brand" style="padding:0 0 18px"><div class="logo">M</div><div><strong>ChatMALIK</strong><small id="accountLabel">حسابك الشخصي</small></div></div><h2 id="authTitle">تسجيل الدخول</h2><p id="authDescription">سجّل الدخول لحفظ محادثاتك والوصول إليها لاحقاً.</p><input id="email" type="email" placeholder="البريد الإلكتروني"><input id="password" type="password" placeholder="كلمة المرور"><button class="primary" id="authSubmit">دخول</button><button class="switch" id="authSwitch">إنشاء حساب جديد</button><div class="status" id="authStatus"></div></div></div>
+<div class="admin-panel" id="adminPanel"><div class="admin-card"><div class="admin-head"><h2 style="margin:0">لوحة إدارة ChatMALIK</h2><button class="ghost" id="adminClose" type="button">إغلاق ✕</button></div><div class="admin-stats"><div class="admin-stat"><strong id="statVisits">—</strong><span>إجمالي الزيارات</span></div><div class="admin-stat"><strong id="statVisitors">—</strong><span>زوار مميزون</span></div><div class="admin-stat"><strong id="statUsers">—</strong><span>حسابات مسجلة</span></div></div><h3>المديرون</h3><div class="admin-list" id="adminList"></div><div class="admin-actions"><button id="addAdmin" type="button">＋ إضافة مدير</button><button id="refreshAdmin" type="button">تحديث الإحصائيات</button></div><p class="admin-note">الزوار المميزون محسوبون بمعرّف متصفح مجهول؛ قد يُحسب الشخص نفسه أكثر من مرة إذا استخدم أجهزة أو متصفحات مختلفة أو حذف بيانات التصفح. الحسابات المسجلة لا تعني عدد الزوار.</p><div class="status" id="adminStatus"></div></div></div>\n<div class="authwrap" id="auth"><div class="auth"><div class="brand" style="padding:0 0 18px"><div class="logo">M</div><div><strong>ChatMALIK</strong><small id="accountLabel">حسابك الشخصي</small></div></div><h2 id="authTitle">تسجيل الدخول</h2><p id="authDescription">سجّل الدخول لحفظ محادثاتك والوصول إليها لاحقاً.</p><input id="email" type="email" placeholder="البريد الإلكتروني"><input id="password" type="password" placeholder="كلمة المرور"><button class="primary" id="authSubmit">دخول</button><button class="switch" id="authSwitch">إنشاء حساب جديد</button><div class="status" id="authStatus"></div></div></div>
 <script>
 const SUPABASE_URL='https://qitjxsofexftxrrkdvom.supabase.co';
 const SUPABASE_KEY='sb_publishable_QP4lSFt3-eSpMTTcOhReMw_2AMZn8U8';
@@ -67,7 +82,7 @@ function showAuth(show){$('auth').style.display=show?'grid':'none'}
 async function authAction(){const email=$('email').value.trim(),password=$('password').value;if(!email||!password){status(tr('enterCredentials'));return}status(tr('working'));const res=signUpMode?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});if(res.error){status(res.error.message);return}if(signUpMode&&!res.data.session){status(tr('signupDone'));return}status('');}
 $('authSubmit').onclick=authAction;
 $('authSwitch').onclick=()=>{signUpMode=!signUpMode;$('authTitle').textContent=signUpMode?tr('signup'):tr('login');$('authSubmit').textContent=signUpMode?tr('signup'):tr('login');$('authSwitch').textContent=signUpMode?tr('switchLogin'):tr('switchSignup');status('')};
-async function refresh(){const {data}=await db.auth.getSession();session=data.session;if(!session){showAuth(true);$('logout').style.display='none';return}showAuth(false);$('userEmail').textContent=session.user.email||'حسابك';$('logout').style.display='inline-block';await loadConversations();if(!currentConversation){const {data:latest}=await db.from('conversations').select('id').order('updated_at',{ascending:false}).limit(1).maybeSingle();if(latest?.id)await openConversation(latest.id)}}
+async function refresh(){const {data}=await db.auth.getSession();session=data.session;if(!session){showAuth(true);$('logout').style.display='none';return}showAuth(false);$('userEmail').textContent=session.user.email||'حسابك';$('logout').style.display='inline-block';await updateAdminVisibility();await loadConversations();if(!currentConversation){const {data:latest}=await db.from('conversations').select('id').order('updated_at',{ascending:false}).limit(1).maybeSingle();if(latest?.id)await openConversation(latest.id)}}
 async function loadConversations(){const {data,error}=await db.from('conversations').select('id,title,updated_at').order('updated_at',{ascending:false});if(error){console.error(error);return}$('history').innerHTML='';(data||[]).forEach(c=>{const b=document.createElement('button');b.textContent=c.title||tr('newTitle');b.className=c.id===currentConversation?'active':'';b.onclick=()=>openConversation(c.id);$('history').appendChild(b)})}
 async function newConversation(){const {data,error}=await db.from('conversations').insert({user_id:session.user.id,title:tr('newTitle')}).select('id').single();if(error){alert(tr('createError')+error.message);return}currentConversation=data.id;$('messages').innerHTML='';$('welcome').style.display='block';await loadConversations();$('prompt').focus()}
 async function openConversation(id){currentConversation=id;$('welcome').style.display='none';const {data,error}=await db.from('messages').select('id,role,content,created_at,attachments').eq('conversation_id',id).order('created_at');if(error){alert(tr('loadError')+error.message);return}$('messages').innerHTML='';for(const message of(data||[]))await addMessage(message);await loadConversations();$('side').classList.remove('open')}
@@ -220,5 +235,47 @@ const extraLabels=({ar:['الأدوات','الصور','الكاميرا','الم
 $('voiceChatLabel').textContent=({ar:'محادثة صوتية',en:'Voice chat',fr:'Conversation vocale',de:'Sprachchat',es:'Chat de voz',tr:'Sesli sohbet',it:'Chat vocale',pt:'Conversa por voz',ru:'Голосовой чат',zh:'语音聊天',ja:'音声チャット'})[lang]||'Voice chat';$('brandTagline').textContent=tr('tagline');$('newChat').textContent=tr('newChat');$('historyTitle').textContent=tr('history');$('logout').textContent=tr('logout');$('assistantTitle').textContent=tr('assistant');$('welcomeTitle').textContent=tr('welcome');$('welcomeText').textContent=tr('welcomeText');$('prompt').placeholder=tr('placeholder');$('send').textContent=tr('send');$('privacyHint').textContent=tr('privacy');$('accountLabel').textContent=tr('account');$('authTitle').textContent=signUpMode?tr('signup'):tr('login');$('authDescription').textContent=tr('authDesc');$('email').placeholder=tr('email');$('password').placeholder=tr('password');$('authSubmit').textContent=signUpMode?tr('signup'):tr('login');$('authSwitch').textContent=signUpMode?tr('switchLogin'):tr('switchSignup');if(!session)$('userEmail').textContent=tr('loggedOut');}
 $('languageSelect').addEventListener('change',e=>applyLanguage(e.target.value));
 
-applyLanguage(detectLanguage());db.auth.onAuthStateChange(()=>setTimeout(refresh,0));refresh();
+
+async function updateAdminVisibility(){
+ const {data,error}=await db.rpc('chatmalik_is_admin');
+ const allowed=!error&&data===true;
+ $('adminButton').style.display=allowed?'inline-block':'none';
+ if(!allowed)$('adminPanel').style.display='none';
+}
+async function loadAdminPanel(){
+ $('adminStatus').textContent='جارٍ تحميل البيانات...';
+ const {data,error}=await db.rpc('chatmalik_admin_stats');
+ if(error){$('adminStatus').textContent='تعذر تحميل لوحة الإدارة: '+error.message;return}
+ $('statVisits').textContent=Number(data.total_visits||0).toLocaleString('ar');
+ $('statVisitors').textContent=Number(data.unique_visitors||0).toLocaleString('ar');
+ $('statUsers').textContent=Number(data.registered_users||0).toLocaleString('ar');
+ const list=$('adminList');list.innerHTML='';
+ (data.admins||[]).forEach(email=>{
+  const row=document.createElement('div');row.className='admin-row';
+  const label=document.createElement('span');label.textContent=email;
+  const remove=document.createElement('button');remove.type='button';remove.textContent='حذف';
+  remove.onclick=async()=>{if(!confirm('حذف صلاحية المدير عن '+email+'؟'))return;const {error}=await db.rpc('chatmalik_admin_action',{p_email:email,p_action:'remove'});if(error){$('adminStatus').textContent=error.message;return}await loadAdminPanel();};
+  row.append(label,remove);list.appendChild(row);
+ });
+ $('adminStatus').textContent='تم تحديث البيانات.';
+}
+$('adminButton').addEventListener('click',async()=>{$('adminPanel').style.display='grid';await loadAdminPanel()});
+$('adminClose').addEventListener('click',()=>$('adminPanel').style.display='none');
+$('adminPanel').addEventListener('click',e=>{if(e.target===$('adminPanel'))$('adminPanel').style.display='none'});
+$('refreshAdmin').addEventListener('click',loadAdminPanel);
+$('addAdmin').addEventListener('click',async()=>{
+ const email=window.prompt('أدخل البريد الإلكتروني للمدير الجديد:');if(!email)return;
+ const {error}=await db.rpc('chatmalik_admin_action',{p_email:email.trim(),p_action:'add'});
+ if(error){$('adminStatus').textContent='تعذرت الإضافة: '+error.message;return}
+ await loadAdminPanel();
+});
+async function recordChatMALIKVisit(){
+ try{
+  let visitorId=localStorage.getItem('chatmalik-visitor-id');
+  if(!visitorId){visitorId=crypto.randomUUID();localStorage.setItem('chatmalik-visitor-id',visitorId);}
+  await db.from('chatmalik_visits').insert({visitor_id:visitorId});
+ }catch(e){console.warn('Visit tracking unavailable',e);}
+}
+recordChatMALIKVisit();
+\napplyLanguage(detectLanguage());db.auth.onAuthStateChange(()=>setTimeout(refresh,0));refresh();
 </script></body></html>
