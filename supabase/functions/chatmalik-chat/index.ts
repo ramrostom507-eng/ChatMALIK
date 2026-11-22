@@ -188,39 +188,7 @@ Deno.serve(async (req: Request) => {
         const detail = geminiResult?.error?.message || "رفض Gemini تنفيذ طلب الصورة.";
         console.error("Gemini image API error:", geminiResponse.status, detail);
         if (geminiResponse.status === 429) {
-          const cloudflareEnabled = Deno.env.get("CLOUDFLARE_IMAGE_FALLBACK_ENABLED") === "true";
-          if (cloudflareEnabled && cloudflareAccountId && cloudflareApiToken && imageAttachments.length === 0) {
-            try {
-              const fallbackResponse = await fetch(
-                `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
-                {
-                  method: "POST",
-                  headers: { "Authorization": `Bearer ${cloudflareApiToken}`, "Content-Type": "application/json" },
-                  body: JSON.stringify({ prompt: prompt.slice(0, 2048), steps: 4 }),
-                },
-              );
-              const fallbackResult = await fallbackResponse.json().catch(() => ({}));
-              const fallbackImage = fallbackResult?.result?.image;
-              if (fallbackResponse.ok && typeof fallbackImage === "string" && fallbackImage.length > 0) {
-                const fallbackBinary = atob(fallbackImage);
-                imageBytes = new Uint8Array(fallbackBinary.length);
-                for (let i = 0; i < fallbackBinary.length; i++) imageBytes[i] = fallbackBinary.charCodeAt(i);
-                outputMime = "image/jpeg";
-                imageProvider = "cloudflare-flux-schnell";
-              } else {
-                console.error("Cloudflare image fallback failed:", fallbackResponse.status, fallbackResult?.errors || "No image returned");
-                return json({ error: "انتهت حصة Gemini، وتعذر استخدام البديل Cloudflare. تحقق من ربطه وصلاحية Workers AI ثم حاول لاحقاً." }, 503);
-              }
-            } catch (fallbackError) {
-              console.error("Cloudflare image fallback request failed:", fallbackError);
-              return json({ error: "انتهت حصة Gemini وتعذر الاتصال ببديل Cloudflare حالياً." }, 503);
-            }
-          } else {
-            const reason = imageAttachments.length
-              ? "البديل الاحتياطي لا يدعم تعديل الصور المرفقة حالياً."
-              : "البديل الاحتياطي غير مفعّل أو لم تُضف بيانات ربطه بعد.";
-            return json({ error: "تم بلوغ حصة Gemini المجانية. " + reason + " لم يتم تشغيل أي خدمة بديلة أو مدفوعة تلقائياً." }, 429);
-          }
+          return json({ error: "تم بلوغ حصة Gemini المجانية. أوقفنا إنشاء الصور لهذا اليوم، ولن يتم تحويل الطلب إلى Cloudflare أو أي مزود مدفوع تلقائياً. حاول مجدداً بعد تجدد الحصة." }, 429);
         }
         if (geminiResponse.status === 400 || geminiResponse.status === 403) {
           return json({ error: "رفض Google طلب الصورة. تحقق من صلاحية GEMINI_API_KEY وإتاحة النموذج في حسابك." }, 502);
@@ -298,7 +266,7 @@ ${memoryInstructions}`;
 
     // Cloudflare Workers AI is the primary text provider. Keep Groq/Gemini as fallbacks.
     // The selected Llama model is text-only, so image requests continue through the existing providers.
-    if (cloudflareAccountId && cloudflareApiToken && !hasImage && !responseTools.length) {
+    if (false && cloudflareAccountId && cloudflareApiToken && !hasImage && !responseTools.length) {
       try {
         const cloudflareResponse = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/ai/v1/chat/completions`,
