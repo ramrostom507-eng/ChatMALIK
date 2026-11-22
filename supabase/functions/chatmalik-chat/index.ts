@@ -142,6 +142,8 @@ Deno.serve(async (req: Request) => {
       if (!geminiKey) return json({ error: "ميزة إنشاء الصور تحتاج GEMINI_API_KEY. لم يتم تشغيل أي مزود مدفوع بديل." }, 503);
       const imageAttachments = requestedAttachments.filter((a: any) => typeof a?.type === "string" && a.type.startsWith("image/"));
       const prompt = latestUserText.slice(0, 4000);
+      let imageBytes: Uint8Array | null = null;
+      let outputMime = "image/png";
       let imageProvider = "gemini";
       const parts: any[] = [{ text: prompt }];
 
@@ -226,18 +228,19 @@ Deno.serve(async (req: Request) => {
         return json({ error: "تعذر إنشاء الصورة عبر Gemini حالياً." }, 502);
       }
 
-      const outputParts = geminiResult?.candidates?.[0]?.content?.parts || [];
-      const imagePart = outputParts.find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
-      const encoded = imagePart?.inlineData?.data || imagePart?.inline_data?.data;
-      const outputMime = imagePart?.inlineData?.mimeType || imagePart?.inline_data?.mime_type || "image/png";
-      if (typeof encoded !== "string" || !encoded.length) {
-        const blockReason = geminiResult?.promptFeedback?.blockReason;
-        return json({ error: blockReason ? "رفض Gemini الطلب بسبب سياسة السلامة: " + blockReason : "لم يُرجع Gemini ملف صورة صالحاً. أعد صياغة الوصف وحاول مجدداً." }, 502);
+      if (!imageBytes) {
+        const outputParts = geminiResult?.candidates?.[0]?.content?.parts || [];
+        const imagePart = outputParts.find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
+        const encoded = imagePart?.inlineData?.data || imagePart?.inline_data?.data;
+        outputMime = imagePart?.inlineData?.mimeType || imagePart?.inline_data?.mime_type || "image/png";
+        if (typeof encoded !== "string" || !encoded.length) {
+          const blockReason = geminiResult?.promptFeedback?.blockReason;
+          return json({ error: blockReason ? "رفض Gemini الطلب بسبب سياسة السلامة: " + blockReason : "لم يُرجع Gemini ملف صورة صالحاً. أعد صياغة الوصف وحاول مجدداً." }, 502);
+        }
+        const binary = atob(encoded);
+        imageBytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) imageBytes[i] = binary.charCodeAt(i);
       }
-
-      const binary = atob(encoded);
-      const imageBytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) imageBytes[i] = binary.charCodeAt(i);
 
       const extension = outputMime.includes("jpeg") || outputMime.includes("jpg") ? "jpg" : outputMime.includes("webp") ? "webp" : "png";
       const imagePath = userData.user.id + "/" + conversationId + "/" + crypto.randomUUID() + "-generated." + extension;
