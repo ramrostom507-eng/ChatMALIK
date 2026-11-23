@@ -410,7 +410,7 @@ function getChatMALIKNativePlatform(){
  const cap=window.Capacitor;
  if(cap&&typeof cap.getPlatform==='function'){const p=cap.getPlatform();if(p==='android'||p==='ios')return p;}
  const ua=navigator.userAgent;
- if(/Android/i.test(ua)&&(/;\\s*wv\\)/i.test(ua)||/Capacitor/i.test(ua)))return 'android';
+ if(/Android/i.test(ua)&&(/;\s*wv\)/i.test(ua)||/Capacitor/i.test(ua)))return 'android';
  if(/(iPhone|iPad|iPod)/i.test(ua)&&/Capacitor/i.test(ua))return 'ios';
  return null;
 }
