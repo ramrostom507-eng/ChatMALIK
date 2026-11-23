@@ -257,47 +257,39 @@ function speechLanguage(){return ({ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',e
 function speechOutputLanguage(text){const value=String(text||'');if(/[\\u0600-\\u06FF]/.test(value))return'ar-SA';if(/[\\u0400-\\u04FF]/.test(value))return'ru-RU';if(/[\\u4E00-\\u9FFF]/.test(value))return'zh-CN';if(/[\\u3040-\\u30FF]/.test(value))return'ja-JP';return speechLanguage()}
 function finishVoiceTurn(){voiceBusy=false;if(voiceConversationMode){$('toolStatus').textContent='انتهى الرد. أستمع إليك الآن…';clearTimeout(voiceRestartTimer);voiceRestartTimer=setTimeout(()=>{if(voiceConversationMode)startVoiceListening()},650)}}
 async function speakReply(text,onFinished){
- let finished=false,watchdog=null;
- const done=()=>{if(finished)return;finished=true;clearTimeout(watchdog);if(onFinished)onFinished()};
+ let finished=false;
+ const done=()=>{if(finished)return;finished=true;if(onFinished)onFinished()};
  const value=String(text||'').trim();if(!value){done();return}
  const nativeVoice=window.ChatMALIKVoice;
  if(nativeVoice&&nativeVoice.TextToSpeech){
+  let nativeCompleted=false;
   try{
    await Promise.race([
-    nativeVoice.TextToSpeech.speak({text:value,lang:speechOutputLanguage(value),rate:0.95,pitch:1,volume:1}),
-    new Promise((_,reject)=>setTimeout(()=>reject(new Error('Native speech timed out')),12000))
+    nativeVoice.TextToSpeech.speak({text:value,lang:speechOutputLanguage(value),rate:0.95,pitch:1,volume:1}).then(()=>{nativeCompleted=true}),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('Native speech timed out')),15000))
    ]);
    done();return;
   }catch(error){
-   console.warn('Native speech failed; switching to browser speech',error);
-   if(nativeVoice.TextToSpeech.stop){try{await nativeVoice.TextToSpeech.stop()}catch(stopError){console.warn(stopError)}}
+   console.warn('Native speech output failed or stalled; using browser speech',error);
+   if(nativeVoice.TextToSpeech.stop){try{await nativeVoice.TextToSpeech.stop()}catch(stopError){console.warn('Native speech stop failed',stopError)}}
   }
  }
  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){
-  $('toolStatus').textContent='الرد النصي جاهز، لكن تشغيل الصوت غير مدعوم على هذا الجهاز.';done();return;
+  $('toolStatus').textContent='الرد النصي جاهز، لكن تشغيل الصوت غير مدعوم على هذا الجهاز.';
+  done();return;
  }
  try{
-  const synth=window.speechSynthesis;
-  synth.cancel();
-  await new Promise(resolve=>setTimeout(resolve,180));
+  window.speechSynthesis.cancel();
   const utterance=new SpeechSynthesisUtterance(value);
   utterance.lang=speechOutputLanguage(value);utterance.rate=0.95;utterance.pitch=1;
-  const chooseVoice=()=>{
-   const voices=synth.getVoices()||[],lang=utterance.lang.toLowerCase();
-   const match=voices.find(v=>v.lang&&v.lang.toLowerCase()===lang)||voices.find(v=>v.lang&&v.lang.toLowerCase().startsWith(lang.split('-')[0]));
-   if(match)utterance.voice=match;
-  };
+  const chooseVoice=()=>{const voices=window.speechSynthesis.getVoices()||[];const lang=utterance.lang.toLowerCase();const match=voices.find(v=>v.lang&&v.lang.toLowerCase()===lang)||voices.find(v=>v.lang&&v.lang.toLowerCase().startsWith(lang.split('-')[0]));if(match)utterance.voice=match};
   chooseVoice();
-  if(!synth.getVoices().length){synth.onvoiceschanged=()=>{try{chooseVoice()}catch(e){}}}
-  utterance.onstart=()=>{$('toolStatus').textContent='ChatMALIK يتحدث الآن…'};
-  utterance.onend=()=>{synth.onvoiceschanged=null;done()};
-  utterance.onerror=(event)=>{console.warn('Browser speech error',event.error);synth.onvoiceschanged=null;$('toolStatus').textContent='تعذر تشغيل الصوت مؤقتاً؛ سأتابع المحادثة.';done()};
-  watchdog=setTimeout(()=>{
-   if(!finished){console.warn('Speech watchdog: releasing voice turn');try{synth.cancel()}catch(e){}$('toolStatus').textContent='تعذر إكمال الصوت؛ يمكنك متابعة المحادثة.';done()}
-  },35000);
-  synth.speak(utterance);
-  setTimeout(()=>{if(!finished){try{if(synth.paused)synth.resume()}catch(e){}}},500);
-  setTimeout(()=>{if(!finished&&!synth.speaking&&!synth.pending){try{synth.speak(utterance)}catch(e){console.warn(e)}}},1200);
+  utterance.onstart=()=>$('toolStatus').textContent='ChatMALIK يتحدث الآن…';
+  utterance.onend=done;
+  utterance.onerror=(event)=>{console.warn('Browser speech error',event.error);$('toolStatus').textContent='تعذر تشغيل الصوت على هذا الجهاز. يمكنك متابعة المحادثة كتابةً.';done()};
+  window.speechSynthesis.speak(utterance);
+  setTimeout(()=>{if(!finished&&window.speechSynthesis.paused)window.speechSynthesis.resume()},400);
+  setTimeout(()=>{if(!finished){window.speechSynthesis.cancel();$('toolStatus').textContent='انتهى وقت تشغيل الصوت؛ يمكنك متابعة المحادثة.';done()}},120000);
  }catch(error){console.warn('Speech synthesis unavailable',error);$('toolStatus').textContent='تعذر تشغيل الصوت؛ يمكنك متابعة المحادثة كتابةً.';done()}
 }
 async function startNativeVoiceListening(singleShot=false){
