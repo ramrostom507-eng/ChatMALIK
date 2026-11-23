@@ -1,0 +1,41 @@
+name: Publish ChatMALIK APK download
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-apk-release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified Android debug APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ChatMALIK-Android-debug
+          path: ./release-files
+          repository: ramrostom507-eng/ChatMALIK
+          run-id: 45118738009
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify APK exists
+        run: |
+          APK="$(find ./release-files -type f -name '*.apk' | head -n 1)"
+          test -n "$APK"
+          echo "APK_PATH=$APK" >> "$GITHUB_ENV"
+          ls -lh "$APK"
+
+      - name: Publish public GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v0.1.0-test "$APK_PATH#ChatMALIK-Android-test.apk" \
+            --repo ramrostom507-eng/ChatMALIK \
+            --title "ChatMALIK Android – نسخة تجريبية" \
+            --notes "نسخة Android تجريبية للاختبار فقط. ليست إصداراً إنتاجياً نهائياً أو نسخة منشورة في WOW MARKET."
