@@ -332,8 +332,22 @@ async function startVoiceListening(){
 $('voiceChat').onclick=async()=>{
  if(voiceConversationMode){voiceConversationMode=false;voiceBusy=false;clearTimeout(voiceRestartTimer);if(speechRecognition){try{speechRecognition.abort()}catch(e){}speechRecognition=null}if(window.ChatMALIKVoice?.SpeechRecognition){try{await window.ChatMALIKVoice.SpeechRecognition.stop()}catch(e){}}if(window.ChatMALIKVoice?.TextToSpeech){try{await window.ChatMALIKVoice.TextToSpeech.stop()}catch(e){}}if('speechSynthesis'in window)window.speechSynthesis.cancel();$('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='تم إيقاف المحادثة الصوتية.';return}
  const nativeAvailable=!!(window.ChatMALIKVoice&&window.ChatMALIKVoice.SpeechRecognition);const browserAvailable=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
- if(!nativeAvailable&&!browserAvailable){$('toolStatus').textContent='الصوت غير مدعوم في هذا المتصفح. استخدم Chrome أو تطبيق Android المحدّث.';return}
- voiceConversationMode=true;$('voiceChat').classList.add('voice-active');$('toolStatus').textContent='بدأت المحادثة الصوتية. تحدث الآن، وسيجيبك ChatMALIK بصوت مسموع.';startVoiceListening();
+ if(!nativeAvailable&&!browserAvailable){$('toolStatus').textContent='الصوت غير مدعوم في هذا المتصفح. افتح الموقع عبر Chrome محدّث.';return}
+ voiceConversationMode=true;$('voiceChat').classList.add('voice-active');
+ if('speechSynthesis'in window&&typeof SpeechSynthesisUtterance!=='undefined'){
+  const synth=window.speechSynthesis;synth.cancel();
+  const unlock=new SpeechSynthesisUtterance('تم تشغيل الصوت. أنا أستمع إليك الآن.');
+  unlock.lang=speechLanguage();unlock.rate=0.95;unlock.volume=1;
+  let began=false;
+  unlock.onstart=()=>{began=true;$('toolStatus').textContent='تم تفعيل الصوت. أستمع إليك الآن…'};
+  unlock.onend=()=>{if(voiceConversationMode)startVoiceListening()};
+  unlock.onerror=event=>{console.warn('Speech unlock failed',event.error);$('toolStatus').textContent='تعذر تفعيل صوت المتصفح. تحقق من إعداد تحويل النص إلى كلام في الهاتف.';if(voiceConversationMode)startVoiceListening()};
+  synth.speak(unlock);
+  setTimeout(()=>{if(!began&&voiceConversationMode){$('toolStatus').textContent='المتصفح لم يبدأ النطق. تحقق من محرك تحويل النص إلى كلام في الهاتف.';startVoiceListening()}},5000);
+ }else{
+  $('toolStatus').textContent='هذا المتصفح لا يوفر خدمة قراءة الردود صوتياً.';
+  startVoiceListening();
+ }
 };
 $('voiceInput').onclick=async()=>{
  if(speechRecognition){try{speechRecognition.abort()}catch(e){}speechRecognition=null;$('voiceInput').classList.remove('voice-active');return}
