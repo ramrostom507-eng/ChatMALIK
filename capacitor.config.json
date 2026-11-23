@@ -1,0 +1,8 @@
+{
+  "appId": "com.wowmarket.chatmalik",
+  "appName": "ChatMALIK",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
