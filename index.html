@@ -254,6 +254,13 @@ let voiceConversationMode=false;
 function speechLanguage(){return ({ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',es:'es-ES',tr:'tr-TR',it:'it-IT',pt:'pt-PT',ru:'ru-RU',zh:'zh-CN',ja:'ja-JP'})[currentLang]||'en-US'}
 function speechOutputLanguage(text){const value=String(text||'');if(/[\u0600-\u06FF]/.test(value))return'ar-SA';if(/[\u0400-\u04FF]/.test(value))return'ru-RU';if(/[\u4E00-\u9FFF]/.test(value))return'zh-CN';if(/[\u3040-\u30FF]/.test(value))return'ja-JP';return speechLanguage()}
 function speakReply(text,onFinished){
+ const nativeVoice=window.ChatMALIKVoice;
+ if(nativeVoice&&nativeVoice.TextToSpeech){
+  nativeVoice.TextToSpeech.speak({text:String(text||''),lang:speechOutputLanguage(text),rate:1,pitch:1,volume:1})
+   .catch(error=>{console.warn('Native speech output failed',error);})
+   .finally(()=>{if(onFinished)onFinished()});
+  return;
+ }
  if(!('speechSynthesis' in window)){if(onFinished)onFinished();return}
  window.speechSynthesis.cancel();
  const u=new SpeechSynthesisUtterance(text);u.lang=speechOutputLanguage(text);u.rate=1;u.pitch=1;
@@ -261,56 +268,82 @@ function speakReply(text,onFinished){
  u.onerror=()=>{if(onFinished)onFinished()};
  window.speechSynthesis.speak(u);
 }
-function startVoiceListening(){
+async function startNativeVoiceListening(singleShot=false){
+ const api=window.ChatMALIKVoice&&window.ChatMALIKVoice.SpeechRecognition;
+ if(!api)throw new Error('native speech recognition unavailable');
+ const availability=await api.available();
+ if(!availability.available)throw new Error('خدمة التعرف على الكلام غير متاحة على هذا الجهاز');
+ const permission=await api.requestPermissions();
+ if(permission&&permission.speechRecognition&&permission.speechRecognition!=='granted')throw new Error('يرجى السماح باستخدام الميكروفون والتعرف على الكلام');
+ if(!singleShot&&!voiceConversationMode)return;
+ $('toolStatus').textContent='أستمع إليك الآن… تحدث بشكل طبيعي.';
+ $('voiceChat').classList.add('voice-active');
+ const result=await api.start({language:speechLanguage(),maxResults:1,partialResults:false,popup:true});
+ const transcript=(result.matches||[]).join(' ').trim();
+ $('voiceChat').classList.toggle('voice-active',!!voiceConversationMode);
+ if(transcript){
+  $('prompt').value=transcript;
+  if(singleShot){$('toolStatus').textContent='تم تحويل كلامك إلى نص.';}
+  else{$('toolStatus').textContent='وصل كلامك، جارٍ إعداد الرد…';await sendMessage();}
+ }else if(!singleShot&&voiceConversationMode){
+  $('toolStatus').textContent='لم أسمع كلاماً واضحاً، سأحاول مجدداً…';
+  setTimeout(()=>{if(voiceConversationMode)startVoiceListening()},700);
+ }
+}
+async function startVoiceListening(){
+ if(!voiceConversationMode)return;
+ if(window.ChatMALIKVoice&&window.ChatMALIKVoice.SpeechRecognition){
+  try{await startNativeVoiceListening(false);}
+  catch(e){console.warn('Native voice input failed',e);voiceConversationMode=false;$('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='تعذر تشغيل الميكروفون: '+(e.message||'تحقق من الإذن وإعدادات الصوت.');}
+  return;
+ }
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!voiceConversationMode||!SR)return;
+ if(!SR){voiceConversationMode=false;$('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='التعرف الصوتي غير متاح في هذا المتصفح. حدّث التطبيق أو استخدم Chrome.';return;}
  if(window.speechSynthesis&&window.speechSynthesis.speaking)return;
  const recognition=new SR();speechRecognition=recognition;
  recognition.lang=speechLanguage();recognition.interimResults=false;recognition.continuous=false;
  let transcript='';
  recognition.onstart=()=>{$('voiceChat').classList.add('voice-active');$('toolStatus').textContent='أستمع إليك الآن… تحدث بشكل طبيعي.'};
  recognition.onresult=e=>{transcript=Array.from(e.results).map(r=>r[0].transcript).join(' ').trim()};
- recognition.onerror=e=>{
-  if(!voiceConversationMode)return;
-  if(e.error==='no-speech'||e.error==='aborted')return;
-  voiceConversationMode=false;$('voiceChat').classList.remove('voice-active');
-  $('toolStatus').textContent='تعذر الوصول إلى الميكروفون أو خدمة التعرف على الكلام. تحقق من إذن الميكروفون والاتصال.';
- };
- recognition.onend=()=>{
-  if(speechRecognition===recognition)speechRecognition=null;
-  if(!voiceConversationMode)return;
-  if(transcript){
-   $('prompt').value=transcript;$('toolStatus').textContent='وصل كلامك، جارٍ إعداد الرد…';
-   sendMessage();
-  }else{
-   setTimeout(()=>{if(voiceConversationMode)startVoiceListening()},500);
-  }
- };
- try{recognition.start()}catch(e){speechRecognition=null;voiceConversationMode=false;$('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='لم يتمكن المتصفح من تشغيل الميكروفون. حاول مرة أخرى.'}
+ recognition.onerror=e=>{if(!voiceConversationMode)return;if(e.error==='no-speech'||e.error==='aborted')return;voiceConversationMode=false;$('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='تعذر الوصول إلى الميكروفون أو خدمة التعرف على الكلام. تحقق من إذن الميكروفون والاتصال.';};
+ recognition.onend=()=>{if(speechRecognition===recognition)speechRecognition=null;if(!voiceConversationMode)return;if(transcript){$('prompt').value=transcript;$('toolStatus').textContent='وصل كلامك، جارٍ إعداد الرد…';sendMessage();}else{setTimeout(()=>{if(voiceConversationMode)startVoiceListening()},700);}};
+ try{recognition.start()}catch(e){speechRecognition=null;voiceConversationMode=false;$('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='لم يتمكن المتصفح من تشغيل الميكروفون. حاول مرة أخرى.';}
 }
-$('voiceChat').onclick=()=>{
- const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$('voiceChat').onclick=async()=>{
  if(voiceConversationMode){
   voiceConversationMode=false;
   if(speechRecognition){try{speechRecognition.stop()}catch(e){}speechRecognition=null}
+  if(window.ChatMALIKVoice&&window.ChatMALIKVoice.SpeechRecognition){try{await window.ChatMALIKVoice.SpeechRecognition.stop()}catch(e){}}
+  if(window.ChatMALIKVoice&&window.ChatMALIKVoice.TextToSpeech){try{await window.ChatMALIKVoice.TextToSpeech.stop()}catch(e){}}
   if('speechSynthesis' in window)window.speechSynthesis.cancel();
   $('voiceChat').classList.remove('voice-active');$('toolStatus').textContent='تم إيقاف المحادثة الصوتية.';
   return;
  }
- if(!SR){alert('المحادثة الصوتية غير مدعومة في هذا المتصفح. جرّب Chrome واسمح باستخدام الميكروفون.');return}
+ const nativeAvailable=!!(window.ChatMALIKVoice&&window.ChatMALIKVoice.SpeechRecognition);
+ const browserAvailable=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+ if(!nativeAvailable&&!browserAvailable){$('toolStatus').textContent='خدمة الصوت غير متاحة حالياً. حدّث التطبيق إلى أحدث إصدار.';return;}
  voiceConversationMode=true;$('voiceChat').classList.add('voice-active');
  $('toolStatus').textContent='بدأت المحادثة الصوتية. تحدث، وسيجيبك ChatMALIK بصوت مسموع.';
  startVoiceListening();
 };
-$('voiceInput').onclick=()=>{
+$('voiceInput').onclick=async()=>{
+ if(speechRecognition){try{speechRecognition.stop()}catch(e){}speechRecognition=null;$('voiceInput').classList.remove('voice-active');return;}
+ const nativeApi=window.ChatMALIKVoice&&window.ChatMALIKVoice.SpeechRecognition;
+ if(nativeApi){
+  $('voiceInput').classList.add('voice-active');$('toolStatus').textContent='أستمع إليك…';
+  try{await startNativeVoiceListening(true);}
+  catch(e){$('toolStatus').textContent='تعذر تشغيل الإملاء: '+(e.message||'تحقق من إذن الميكروفون.');}
+  finally{$('voiceInput').classList.remove('voice-active');}
+  return;
+ }
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!SR){alert('الإملاء الصوتي غير مدعوم في هذا المتصفح. جرّب Chrome أو استخدم لوحة المفاتيح الصوتية.');return}
- if(speechRecognition){speechRecognition.stop();speechRecognition=null;$('voiceInput').classList.remove('voice-active');return}
- speechRecognition=new SR();speechRecognition.lang=({ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',es:'es-ES',tr:'tr-TR',it:'it-IT',pt:'pt-PT',ru:'ru-RU',zh:'zh-CN',ja:'ja-JP'})[currentLang]||'en-US';speechRecognition.interimResults=true;
- $('voiceInput').classList.add('voice-active');speechRecognition.onresult=e=>{let transcript='';for(let i=e.resultIndex;i<e.results.length;i++)transcript+=e.results[i][0].transcript;$('prompt').value=transcript};
- speechRecognition.onerror=()=>{$('toolStatus').textContent='تعذر تشغيل الإملاء الصوتي.'};
- speechRecognition.onend=()=>{$('voiceInput').classList.remove('voice-active');speechRecognition=null};
- speechRecognition.start();
+ if(!SR){$('toolStatus').textContent='الإملاء الصوتي غير متاح في هذا المتصفح. حدّث التطبيق أو استخدم Chrome.';return;}
+ const recognition=new SR();speechRecognition=recognition;recognition.lang=speechLanguage();recognition.interimResults=true;recognition.continuous=false;
+ $('voiceInput').classList.add('voice-active');
+ recognition.onresult=e=>{let transcript='';for(let i=e.resultIndex;i<e.results.length;i++)transcript+=e.results[i][0].transcript;$('prompt').value=transcript;};
+ recognition.onerror=e=>{$('toolStatus').textContent='تعذر تشغيل الإملاء الصوتي: '+(e.error||'خطأ غير معروف');};
+ recognition.onend=()=>{$('voiceInput').classList.remove('voice-active');if(speechRecognition===recognition)speechRecognition=null;};
+ try{recognition.start()}catch(e){$('voiceInput').classList.remove('voice-active');speechRecognition=null;$('toolStatus').textContent='لم يتمكن المتصفح من تشغيل الميكروفون.';}
 };
 async function uploadPendingFiles(conversationId){
  const uploaded=[];
