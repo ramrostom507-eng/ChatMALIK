@@ -1,0 +1,27 @@
+{
+  "id": "./",
+  "name": "ChatMALIK — شات الملك",
+  "short_name": "شات الملك",
+  "description": "مساعدك الذكي للمحادثة والبحث وتحليل الملفات والصور.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1220",
+  "theme_color": "#101827",
+  "categories": [
+    "productivity",
+    "education",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
