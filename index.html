@@ -2,7 +2,14 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101827">\n<meta name="description" content="ChatMALIK — مساعدك الذكي للمحادثة والبحث وتحليل الملفات والصور.">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<link rel="manifest" href="./manifest.webmanifest">\n<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">\n<link rel="apple-touch-icon" href="./icons/icon.svg">
+<meta name="theme-color" content="#101827">
+<meta name="description" content="ChatMALIK — مساعدك الذكي للمحادثة والبحث وتحليل الملفات والصور.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/icon.svg">
 <title>ChatMALIK — مساعدك الذكي</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -383,4 +390,13 @@ $('plusSubscribeButton').addEventListener('click',()=>{plusPanel.style.display='
 $('plusCloseButton').addEventListener('click',()=>{plusPanel.style.display='none';});
 $('plusNotifyButton').addEventListener('click',()=>{alert('سيتم فتح الاشتراك بعد تحديد السعر وتفعيل الدفع الآمن.');});
 plusPanel.addEventListener('click',e=>{if(e.target===plusPanel)plusPanel.style.display='none';});
-</script>\n<script>\n// ChatMALIK installable phone app (PWA). API/auth requests are never cached.\nlet chatMALIKInstallPrompt=null;\nconst installAppButton=document.getElementById('installAppButton');\nwindow.addEventListener('beforeinstallprompt',event=>{event.preventDefault();chatMALIKInstallPrompt=event;if(installAppButton)installAppButton.hidden=false;});\nif(installAppButton){installAppButton.addEventListener('click',async()=>{if(chatMALIKInstallPrompt){chatMALIKInstallPrompt.prompt();await chatMALIKInstallPrompt.userChoice;chatMALIKInstallPrompt=null;installAppButton.hidden=true;return;}const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(isIOS?'لتثبيت ChatMALIK على iPhone: اضغط مشاركة ثم «إضافة إلى الشاشة الرئيسية».':'يمكنك تثبيت ChatMALIK من قائمة المتصفح ثم اختيار «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».');});}\nwindow.addEventListener('appinstalled',()=>{if(installAppButton)installAppButton.hidden=true;});\nif('serviceWorker' in navigator && location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(error=>console.warn('PWA service worker unavailable',error)));}\n</script>\n</body></html>
+</script>
+<script>
+// ChatMALIK installable phone app (PWA). API/auth requests are never cached.
+let chatMALIKInstallPrompt=null;
+const installAppButton=document.getElementById('installAppButton');
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();chatMALIKInstallPrompt=event;if(installAppButton)installAppButton.hidden=false;});
+if(installAppButton){installAppButton.addEventListener('click',async()=>{if(chatMALIKInstallPrompt){chatMALIKInstallPrompt.prompt();await chatMALIKInstallPrompt.userChoice;chatMALIKInstallPrompt=null;installAppButton.hidden=true;return;}const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(isIOS?'لتثبيت ChatMALIK على iPhone: اضغط مشاركة ثم «إضافة إلى الشاشة الرئيسية».':'يمكنك تثبيت ChatMALIK من قائمة المتصفح ثم اختيار «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».');});}
+window.addEventListener('appinstalled',()=>{if(installAppButton)installAppButton.hidden=true;});
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(error=>console.warn('PWA service worker unavailable',error)));}
+</script>\n</body></html>
