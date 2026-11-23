@@ -49,6 +49,9 @@ jobs:
       - name: Generate Android project
         run: npx cap add android
 
+      - name: Apply Android permissions
+        run: node scripts/patch-android-manifest.mjs
+
       - name: Synchronize Capacitor
         run: npx cap sync android
 
