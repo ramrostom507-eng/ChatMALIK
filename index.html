@@ -255,7 +255,7 @@ let voiceConversationMode=false;
 let voiceBusy=false;
 let voiceRestartTimer=null;
 function speechLanguage(){return ({ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',es:'es-ES',tr:'tr-TR',it:'it-IT',pt:'pt-PT',ru:'ru-RU',zh:'zh-CN',ja:'ja-JP'})[currentLang]||'en-US'}
-function speechOutputLanguage(text){const value=String(text||'');if(/[\\u0600-\\u06FF]/.test(value))return'ar-SA';if(/[\\u0400-\\u04FF]/.test(value))return'ru-RU';if(/[\\u4E00-\\u9FFF]/.test(value))return'zh-CN';if(/[\\u3040-\\u30FF]/.test(value))return'ja-JP';return speechLanguage()}
+function speechOutputLanguage(text){const value=String(text||'');if(/[\u0600-\u06FF]/.test(value))return'ar-SA';if(/[\u0400-\u04FF]/.test(value))return'ru-RU';if(/[\u4E00-\u9FFF]/.test(value))return'zh-CN';if(/[\u3040-\u30FF]/.test(value))return'ja-JP';return speechLanguage()}
 function finishVoiceTurn(){voiceBusy=false;if(voiceConversationMode){$('toolStatus').textContent='انتهى الرد. أستمع إليك الآن…';clearTimeout(voiceRestartTimer);voiceRestartTimer=setTimeout(()=>{if(voiceConversationMode)startVoiceListening()},650)}}
 async function speakReply(text,onFinished){
  let finished=false,started=false,timer=null;
