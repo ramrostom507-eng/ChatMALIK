@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "8.6.2",
-    "esbuild": "^0.25.12"
+    "esbuild": "^0.25.12",
+    "sharp": "^0.34.5"
   }
-}
+}\n
