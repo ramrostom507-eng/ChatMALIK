@@ -15,6 +15,10 @@ on:
       - 'scripts/**'
       - '.github/workflows/android-debug.yml'
 
+concurrency:
+  group: chatmalik-android-build
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -22,6 +26,7 @@ jobs:
   android-debug:
     name: Build installable Android test APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Check out ChatMALIK
         uses: actions/checkout@v4
@@ -36,6 +41,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Install Android SDK
         uses: android-actions/setup-android@v4
@@ -62,7 +70,7 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew --no-daemon --stacktrace --console=plain --max-workers=2 assembleDebug
 
       - name: Upload ChatMALIK APK
         uses: actions/upload-artifact@v4
