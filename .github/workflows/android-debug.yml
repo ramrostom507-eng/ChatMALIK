@@ -55,6 +55,9 @@ jobs:
       - name: Synchronize Capacitor
         run: npx cap sync android
 
+      - name: Generate dark-blue Android launcher icon
+        run: node scripts/generate-android-icons.mjs
+
       - name: Build debug APK
         working-directory: android
         run: |
