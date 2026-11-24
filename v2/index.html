@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="ChatMALIK — مساعد ذكاء اصطناعي عالمي متعدد اللغات">
+  <title>ChatMALIK</title>
+  <link rel="stylesheet" href="./app.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">M</div><div><strong>ChatMALIK</strong><small>AI assistant</small></div></div>
+      <button class="new-chat" id="newChat">＋ محادثة جديدة</button>
+      <div class="history-heading">محادثاتك</div>
+      <div class="history-list" id="historyList"></div>
+      <div class="sidebar-footer">
+        <div class="account-email" id="accountEmail">غير مسجل الدخول</div>
+        <button class="subtle-button full" id="sidebarAccount">تسجيل الدخول</button>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div class="top-left">
+          <button class="icon-button mobile-only" id="menuButton" aria-label="القائمة">☰</button>
+          <strong class="top-title">ChatMALIK</strong>
+        </div>
+        <div class="top-actions">
+          <select id="languageSelect" class="language-select" aria-label="Language">
+            <option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option>
+            <option value="de">Deutsch</option><option value="es">Español</option><option value="tr">Türkçe</option>
+            <option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option>
+            <option value="zh">中文</option><option value="ja">日本語</option>
+          </select>
+          <button class="icon-button" id="settingsButton" aria-label="الإعدادات" title="الإعدادات">⚙</button>
+          <button class="subtle-button" id="accountButton">الحساب</button>
+        </div>
+      </header>
+
+      <section class="chat-area">
+        <div class="welcome" id="welcome">
+          <div class="welcome-mark">M</div>
+          <h1 id="welcomeTitle">كيف يمكنني مساعدتك اليوم؟</h1>
+          <p id="welcomeSubtitle">اسأل، تعلّم، أنشئ، وحلّل — بلغتك.</p>
+        </div>
+        <div class="messages" id="messages" aria-live="polite"></div>
+        <div class="composer-wrap">
+          <div class="attachment-preview" id="attachmentPreview"></div>
+          <div class="composer">
+            <button class="composer-icon" id="attachButton" title="إرفاق صورة أو ملف نصي" aria-label="إرفاق">＋</button>
+            <input id="filePicker" type="file" accept="image/*,.txt,.md,.csv,.json,.xml,.html" multiple hidden>
+            <textarea id="prompt" rows="1" placeholder="اكتب رسالتك إلى ChatMALIK..." aria-label="رسالتك"></textarea>
+            <button class="composer-icon" id="dictationButton" title="إملاء صوتي" aria-label="إملاء صوتي">🎙</button>
+            <button class="composer-icon voice-button" id="voiceButton" title="بدء محادثة صوتية" aria-label="محادثة صوتية">◖))</button>
+            <button class="send-button" id="sendButton" title="إرسال" aria-label="إرسال">↑</button>
+          </div>
+          <div class="composer-note" id="composerNote">قد يخطئ ChatMALIK أحياناً؛ راجع المعلومات المهمة.</div>
+          <div class="voice-status" id="voiceStatus" role="status"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="authModal" hidden>
+    <section class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-brand"><div class="brand-mark">M</div><strong>ChatMALIK</strong></div>
+      <h2 id="authTitle">تسجيل الدخول</h2>
+      <p id="authDescription">ادخل إلى حسابك أو أنشئ حساباً جديداً للبدء.</p>
+      <form id="authForm">
+        <label><span id="emailLabel">البريد الإلكتروني</span><input id="emailInput" type="email" autocomplete="email" required></label>
+        <label><span id="passwordLabel">كلمة المرور</span><input id="passwordInput" type="password" autocomplete="current-password" minlength="8" required></label>
+        <button class="primary-button full" id="authSubmit" type="submit">دخول</button>
+      </form>
+      <button class="text-button" id="forgotButton">نسيت كلمة المرور؟</button>
+      <button class="text-button" id="authModeButton">إنشاء حساب جديد</button>
+      <button class="text-button muted" id="authCloseButton" hidden>إغلاق</button>
+      <div class="form-status" id="authStatus" role="status"></div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="settingsModal" hidden>
+    <section class="modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-heading"><h2 id="settingsTitle">الإعدادات</h2><button class="icon-button" data-close="settingsModal">✕</button></div>
+      <label><span id="voiceLabel">صوت المساعد</span><select id="voiceSelect"><option value="">الصوت الافتراضي للجهاز</option></select></label>
+      <label><span id="speedLabel">سرعة الصوت</span><select id="speedSelect"><option value="0.8">بطيئة</option><option value="0.95" selected>طبيعية</option><option value="1.1">سريعة</option><option value="1.25">سريعة جداً</option></select></label>
+      <label class="check-row"><input type="checkbox" id="autoSpeak" checked><span id="autoSpeakLabel">قراءة الردود بصوت مرتفع</span></label>
+      <p class="settings-help" id="voiceHelp">الأصوات المتاحة تعتمد على الأصوات المثبتة في جهازك أو متصفحك. ستظهر هنا كل الأصوات التي يوفرها النظام.</p>
+      <button class="primary-button full" id="saveSettings">حفظ الإعدادات</button>
+      <div class="form-status" id="settingsStatus"></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+</body>
+</html>
