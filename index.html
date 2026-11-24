@@ -113,34 +113,37 @@ body.light-theme .composer{background:linear-gradient(transparent,#eef2f7 35%)}
 .admin-day-bar{height:100%;background:linear-gradient(90deg,#9a7439,#e6c783);border-radius:99px;min-width:0}
 .admin-day strong{text-align:left;color:#f0d18d}
 @media(max-width:480px){.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-day{grid-template-columns:76px 1fr 36px;gap:6px}}
+
+/* Compact ChatMALIK icon-first interface */
+.top{gap:12px}.top-brand{display:flex;align-items:center;gap:10px;min-width:0}.top-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.icon-button{width:42px;height:42px;min-width:42px;padding:0!important;display:inline-grid;place-items:center;border-radius:13px;font-size:20px;line-height:1}.top .icon-button{width:38px;height:38px;min-width:38px;border-radius:12px}.top .plus-btn.icon-button{background:#12345b;color:#dcecff;border:1px solid #2d69a5;box-shadow:none}.attach-actions{gap:8px;padding:5px 3px 8px}.attach-btn.icon-button{background:transparent;border:0;color:#536174;font-size:22px;border-radius:50%;width:40px;height:40px;min-width:40px}.attach-btn.icon-button:hover,.attach-btn.icon-button:focus-visible{background:#e8eef6;color:#123c6b;border:0}.composebox{border-radius:25px;padding:8px 10px;gap:8px;align-items:flex-end}.composebox textarea{min-height:44px;padding:11px 8px}.send.icon-button{width:42px;height:42px;min-width:42px;border-radius:50%;font-size:24px;background:#123c6b;color:#fff;padding:0!important}.send.icon-button:disabled{opacity:.45}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.tools-panel{bottom:calc(100% - 2px);inset-inline-start:8px}.tool-btn{min-height:42px;border-radius:12px}.tool-status:empty{display:none}.hint{margin-top:7px}@media(max-width:720px){.top{justify-content:space-between}.top-actions{gap:4px}.top .icon-button{width:34px;height:34px;min-width:34px;font-size:18px}.lang-select{max-width:92px;padding:6px}.content{padding-bottom:16px}.attach-actions{gap:5px}.attach-btn.icon-button{width:36px;height:36px;min-width:36px;font-size:20px}.composebox{border-radius:24px}.send.icon-button{width:40px;height:40px;min-width:40px}}
 </style></head>
 <body>
 <div class="shell">
 <aside class="side" id="side"><div class="brand"><div class="logo">M</div><div><strong>ChatMALIK</strong><small id="brandTagline">ذكاء يساعدك كل يوم</small></div></div>
 <button class="new" id="newChat">＋ محادثة جديدة</button><h4 id="historyTitle">محادثاتك</h4><div class="history" id="history"></div><div class="userbox"><div id="userEmail">غير مسجل الدخول</div><button class="ghost" id="logout" style="margin-top:10px;display:none">تسجيل الخروج</button></div></aside>
-<main class="main"><header class="top"><div><button class="mobilemenu" id="menu">☰</button> <b id="assistantTitle">المساعد الذكي</b></div><button class="settings-btn" id="installAppButton" type="button" hidden>⬇ تثبيت التطبيق</button><button class="plus-btn" id="plusSubscribeButton" type="button">✦ اشترك في Plus</button><button class="settings-btn" id="integrationsButton" type="button">🔗 التطبيقات</button><button class="settings-btn" id="settingsButton" type="button">⚙ الإعدادات</button><button class="admin-btn" id="adminButton" type="button">⚙ الإدارة</button><select id="languageSelect" class="lang-select" aria-label="Language"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="zh">中文</option><option value="ja">日本語</option></select></header>
+<main class="main"><header class="top"><div class="top-brand"><button class="mobilemenu icon-button" id="menu" type="button" aria-label="القائمة" title="القائمة">☰</button> <b id="assistantTitle">المساعد الذكي</b></div><div class="top-actions"><button class="settings-btn icon-button" id="installAppButton" type="button" hidden aria-label="تثبيت التطبيق" title="تثبيت التطبيق">⇩</button><button class="plus-btn icon-button" id="plusSubscribeButton" type="button" aria-label="ChatMALIK Plus" title="ChatMALIK Plus">✦</button><button class="settings-btn icon-button" id="integrationsButton" type="button" aria-label="التطبيقات" title="التطبيقات">⌘</button><button class="settings-btn icon-button" id="settingsButton" type="button" aria-label="الإعدادات" title="الإعدادات">⚙</button><button class="admin-btn icon-button" id="adminButton" type="button" aria-label="الإدارة" title="الإدارة">▦</button><select id="languageSelect" class="lang-select" aria-label="Language"><option value="ar">العربية</option><option value="en">English</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="es">Español</option><option value="tr">Türkçe</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="zh">中文</option><option value="ja">日本語</option></select></header>
 <section class="content"><div class="welcome" id="welcome"><div class="orb">M</div><h1 id="welcomeTitle">أهلاً بك في ChatMALIK</h1><p id="welcomeText">مساحة محادثاتك الذكية — ابدأ محادثة جديدة</p></div><div class="messages" id="messages"></div>
 <div class="composer">
 <div class="attach-preview" id="attachmentPreview"></div>
-<div class="attach-actions">
-<button class="attach-btn" id="plusTools" type="button" aria-label="More tools">＋ <span id="toolsLabel">الأدوات</span></button>
-<button class="attach-btn" id="pickImages" type="button">▧ <span id="imagesLabel">الصور</span></button>
-<button class="attach-btn" id="openCamera" type="button">◎ <span id="cameraLabel">الكاميرا</span></button>
-<button class="attach-btn" id="pickFiles" type="button">⌁ <span id="filesLabel">الملفات</span></button>
-<button class="attach-btn" id="voiceInput" type="button">🎙 <span id="voiceLabel">إملاء صوتي</span></button>
-<button class="attach-btn" id="voiceChat" type="button">🔊 <span id="voiceChatLabel">محادثة صوتية</span></button>
-<button class="attach-btn" id="stopVoice" type="button" title="إيقاف الصوت">⏹ <span>إيقاف الصوت</span></button>
+<div class="attach-actions" aria-label="أدوات الرسالة">
+<button class="attach-btn icon-button" id="plusTools" type="button" aria-label="المزيد من الأدوات" title="المزيد من الأدوات">＋<span id="toolsLabel" class="sr-only">الأدوات</span></button>
+<button class="attach-btn icon-button" id="pickImages" type="button" aria-label="إرفاق صورة" title="إرفاق صورة">▧<span id="imagesLabel" class="sr-only">الصور</span></button>
+<button class="attach-btn icon-button" id="openCamera" type="button" aria-label="فتح الكاميرا" title="فتح الكاميرا">◎<span id="cameraLabel" class="sr-only">الكاميرا</span></button>
+<button class="attach-btn icon-button" id="pickFiles" type="button" aria-label="إرفاق ملف" title="إرفاق ملف">⌁<span id="filesLabel" class="sr-only">الملفات</span></button>
+<button class="attach-btn icon-button" id="voiceInput" type="button" aria-label="إملاء صوتي" title="إملاء صوتي">🎙<span id="voiceLabel" class="sr-only">إملاء صوتي</span></button>
+<button class="attach-btn icon-button" id="voiceChat" type="button" aria-label="محادثة صوتية" title="محادثة صوتية" aria-pressed="false">◖))<span id="voiceChatLabel" class="sr-only">محادثة صوتية</span></button>
 <input id="imageInput" type="file" accept="image/*" multiple hidden>
 <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
 <input id="fileInput" type="file" accept=".pdf,.txt,.csv,.md,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.odt,.html,.xml" multiple hidden>
 </div>
 <div class="tools-panel" id="toolsPanel">
 <button class="tool-btn" type="button" data-tool="web">🌐 <span id="webToolLabel">البحث على الإنترنت</span></button>
-<button class="tool-btn" type="button" data-tool="analyze">📄 <span id="analyzeToolLabel">تحليل الملفات</span></button>
-<button class="tool-btn" type="button" data-tool="image">🎨 <span id="imageToolLabel">إنشاء الصور</span></button>
+<button class="tool-btn" type="button" data-tool="analyze">▤ <span id="analyzeToolLabel">تحليل الملفات</span></button>
+<button class="tool-btn" type="button" data-tool="image">▧ <span id="imageToolLabel">إنشاء الصور</span></button>
 <button class="tool-btn" type="button" data-tool="code">⌘ <span id="codeToolLabel">مساعدة البرمجة</span></button>
+<button class="tool-btn" type="button" id="stopVoice" title="إيقاف الصوت">⏹ <span>إيقاف الصوت</span></button>
 </div>
-<div class="composebox"><textarea id="prompt" rows="1" placeholder="اكتب رسالتك هنا..."></textarea><button class="send" id="send">إرسال ↑</button></div>
+<div class="composebox"><textarea id="prompt" rows="1" placeholder="اكتب رسالتك هنا..."></textarea><button class="send icon-button" id="send" aria-label="إرسال" title="إرسال">↑</button></div>
 <div class="tool-status" id="toolStatus"></div>
 <div class="hint" id="privacyHint">لا تشارك كلمات المرور أو المعلومات الحساسة في المحادثة.</div></div></section></main></div>
 <div class="admin-panel" id="adminPanel"><div class="admin-card"><div class="admin-head"><h2 style="margin:0">لوحة إدارة ChatMALIK</h2><button class="ghost" id="adminClose" type="button">إغلاق ✕</button></div><div class="admin-stats">
