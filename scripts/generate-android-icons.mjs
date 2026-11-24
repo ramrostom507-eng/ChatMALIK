@@ -24,9 +24,11 @@ for (const [density, size] of densities) {
 // Android 8+ adaptive launcher icon: Android applies the device's own mask.
 const foregroundDir = new URL('mipmap-xxxhdpi/', androidRes);
 const foregroundSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<rect x="76" y="76" width="360" height="360" rx="88" fill="#2465A8"/>
-<path d="M130 354V158h54l72 94 72-94h54v196h-58V245l-68 84-68-84v109z" fill="#F1F7FF"/>
-<circle cx="256" cy="112" r="16" fill="#8CC8FF"/>
+<defs><linearGradient id="fg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#174F91"/><stop offset="1" stop-color="#04152D"/></linearGradient></defs>
+<rect x="56" y="56" width="400" height="400" rx="112" fill="url(#fg)" stroke="#75B8F0" stroke-width="10"/>
+<path d="M118 150c0-25 20-45 45-45h186c25 0 45 20 45 45v151c0 25-20 45-45 45H232l-79 62v-62h-10c-25 0-45-20-45-45V150z" fill="#0A2343" stroke="#75B8F0" stroke-width="12" stroke-linejoin="round"/>
+<path d="M151 290V169h35l70 82 70-82h35v121h-39v-62l-66 75-66-75v62z" fill="#DDF1FF"/>
+<circle cx="365" cy="365" r="27" fill="#62B8FF" stroke="#DDF1FF" stroke-width="8"/>
 </svg>`);
 const adaptivePng = await sharp(foregroundSvg).resize(432, 432).png().toBuffer();
 await writeFile(new URL('chatmalik_foreground.png', foregroundDir), adaptivePng);
