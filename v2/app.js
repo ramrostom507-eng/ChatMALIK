@@ -3,7 +3,7 @@
 const SUPABASE_URL='https://qitjxsofexftxrrkdvom.supabase.co';
 const SUPABASE_KEY='sb_publishable_QP4lSFt3-eSpMTTcOhReMw_2AMZn8U8';
 const AUTH_REDIRECT_URL='https://ramrostom507-eng.github.io/ChatMALIK/';
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storageKey:'chatmalik-v2-auth-token',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const $=id=>document.getElementById(id);
 const LANGS=['ar','en','fr','de','es','tr','it','pt','ru','zh','ja'];
 const RTL=['ar'];
