@@ -272,7 +272,7 @@ async function speakReply(text,onFinished){
  };
  // In the installed Android/iOS app, use the native TTS engine first.
  // WebView speechSynthesis can exist but remain silent on some devices.
- if(nativeVoice&&getChatMALIKNativePlatform()){
+ if(nativeVoice){
   if(await useNative())return;
  }
  if('speechSynthesis'in window&&typeof SpeechSynthesisUtterance!=='undefined'){
