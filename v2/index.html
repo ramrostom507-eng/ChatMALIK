@@ -8,6 +8,8 @@
   <title>ChatMALIK</title>
   <link rel="stylesheet" href="./app.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -89,6 +91,7 @@
       <label><span id="speedLabel">سرعة الصوت</span><select id="speedSelect"><option value="0.8">بطيئة</option><option value="0.95" selected>طبيعية</option><option value="1.1">سريعة</option><option value="1.25">سريعة جداً</option></select></label>
       <label class="check-row"><input type="checkbox" id="autoSpeak" checked><span id="autoSpeakLabel">قراءة الردود بصوت مرتفع</span></label>
       <p class="settings-help" id="voiceHelp">الأصوات المتاحة تعتمد على الأصوات المثبتة في جهازك أو متصفحك. ستظهر هنا كل الأصوات التي يوفرها النظام.</p>
+      <button class="subtle-button full" id="testVoiceButton" type="button">تجربة الصوت المحدد</button>
       <button class="primary-button full" id="saveSettings">حفظ الإعدادات</button>
       <div class="form-status" id="settingsStatus"></div>
     </section>
