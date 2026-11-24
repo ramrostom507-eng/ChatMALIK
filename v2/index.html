@@ -39,6 +39,7 @@
             <option value="zh">中文</option><option value="ja">日本語</option>
           </select>
           <button class="icon-button" id="settingsButton" aria-label="الإعدادات" title="الإعدادات">⚙</button>
+          <button class="subtle-button" id="adminOpenButton" hidden>الإدارة</button>
           <button class="subtle-button" id="accountButton">الحساب</button>
         </div>
       </header>
@@ -97,6 +98,21 @@
     </section>
   </div>
 
+
+  <div class="modal-backdrop admin-backdrop" id="adminModal" hidden>
+    <section class="admin-panel" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+      <div class="admin-header">
+        <div><h2 id="adminTitle">إدارة ChatMALIK</h2><p id="adminSubtitle">لوحة تحكم التطبيق والحسابات</p></div>
+        <div class="admin-header-actions"><button class="subtle-button" id="adminRefreshButton">تحديث</button><button class="icon-button" id="adminCloseButton" aria-label="إغلاق">✕</button></div>
+      </div>
+      <div class="admin-protection" id="adminProtection">حماية المدير الأساسي مفعّلة: لا يمكن حذف حسابات الإدارة أو إيقافها من هذه اللوحة.</div>
+      <div class="admin-stats" id="adminStats"></div>
+      <div class="admin-toolbar"><h3>حسابات المستخدمين</h3><input id="adminSearch" type="search" placeholder="ابحث بالبريد الإلكتروني"></div>
+      <div class="admin-users" id="adminUsers"><p>اضغط تحديث لتحميل البيانات.</p></div>
+      <div class="admin-footer" id="adminFooter">إجراءات الحسابات العادية: إيقاف، تفعيل، أو حذف. صلاحيات المدير الأساسي محمية.</div>
+      <div class="form-status" id="adminStatus" role="status"></div>
+    </section>
+  </div>
   <div class="toast" id="toast" role="status"></div>
 </body>
 </html>
