@@ -146,7 +146,7 @@ body.light-theme .composer{background:linear-gradient(transparent,#eef2f7 35%)}
 const SUPABASE_URL='https://qitjxsofexftxrrkdvom.supabase.co';
 const SUPABASE_KEY='sb_publishable_QP4lSFt3-eSpMTTcOhReMw_2AMZn8U8';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let session=null,currentConversation=null,signUpMode=false;
+let session=null,currentConversation=null,signUpMode=false,sendInProgress=false;
 const $=id=>document.getElementById(id);
 function status(t){$('authStatus').textContent=t}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -176,7 +176,48 @@ async function loadConversations(){const {data,error}=await db.from('conversatio
 async function newConversation(){const {data,error}=await db.from('conversations').insert({user_id:session.user.id,title:tr('newTitle')}).select('id').single();if(error){alert(tr('createError')+error.message);return}currentConversation=data.id;$('messages').innerHTML='';$('welcome').style.display='block';await loadConversations();$('prompt').focus()}
 async function openConversation(id){currentConversation=id;$('welcome').style.display='none';const {data,error}=await db.from('messages').select('id,role,content,created_at,attachments').eq('conversation_id',id).order('created_at');if(error){alert(tr('loadError')+error.message);return}$('messages').innerHTML='';for(const message of(data||[]))await addMessage(message);await loadConversations();$('side').classList.remove('open')}
 async function addMessage(m){const d=document.createElement('div');d.className='msg '+(m.role==='user'?'user':'assistant');d.dir='auto';d.textContent=m.content||'';if(Array.isArray(m.attachments)&&m.attachments.length&&session){const wrap=document.createElement('div');wrap.className='msg-attachments';for(const file of m.attachments){if(!file||typeof file.path!=='string'||!file.path.startsWith(session.user.id+'/'+currentConversation+'/'))continue;const {data,error}=await db.storage.from('chatmalik-attachments').createSignedUrl(file.path,3600);if(error||!data?.signedUrl)continue;if(String(file.type||'').startsWith('image/')){const img=document.createElement('img');img.className='msg-attachment-image';img.src=data.signedUrl;img.alt=file.name||'Image attachment';img.loading='lazy';wrap.appendChild(img)}else{const link=document.createElement('a');link.className='msg-file-link';link.href=data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='📎 '+(file.name||'Open attachment');wrap.appendChild(link)}}if(wrap.childNodes.length)d.appendChild(wrap)}$('messages').appendChild(d);$('messages').scrollTop=$('messages').scrollHeight}
-async function sendMessage(){if(!session)return;const text=$('prompt').value.trim();if(!text&&!pendingFiles.length)return;if(text.length>8000){alert(tr('tooLong'));return}if(!currentConversation)await newConversation();if(!currentConversation)return;$('send').disabled=true;$('send').textContent='…';let uploaded=[];try{if(pendingFiles.length)uploaded=await uploadPendingFiles(currentConversation)}catch(uploadError){alert('تعذر رفع المرفق: '+uploadError.message);$('send').disabled=false;$('send').textContent=tr('send');return}const savedText=(text||'')+(uploaded.length?'\\n\\n[تم إرفاق: '+uploaded.map(x=>x.name).join('، ')+']':'');pendingFiles=[];renderAttachments();$('prompt').value='';$('welcome').style.display='none';$('send').disabled=true;$('send').textContent='…';const {error:saveError}=await db.from('messages').insert({conversation_id:currentConversation,role:'user',content:savedText,attachments:uploaded.map(({name,type,size,path})=>({name,type,size,path}))});if(saveError){alert(tr('sendError')+saveError.message);$('send').disabled=false;$('send').textContent=tr('send');return}await addMessage({role:'user',content:savedText,attachments:uploaded.map(({name,type,size,path})=>({name,type,size,path}))});const conversationId=currentConversation;await db.from('conversations').update({updated_at:new Date().toISOString(),title:text.slice(0,45)}).eq('id',conversationId);const pending=document.createElement('div');pending.className='msg assistant';pending.textContent=tr('thinking');pending.id='pendingReply';$('messages').appendChild(pending);$('messages').scrollTop=$('messages').scrollHeight;const {data,error}=await db.functions.invoke('chatmalik-chat',{body:{conversation_id:conversationId,language:currentLang,locale:currentLang,reply_language:currentLang,attachments:uploaded,tool:activeTool,preferences:chatPreferences}});pending.remove();if(error||!data?.reply){let reason=data?.error;if(!reason&&error?.context&&typeof error.context.clone==='function'){try{const errorBody=await error.context.clone().json();reason=errorBody?.error;}catch{}}const errorReply=tr('replyError')+(reason||error?.message||tr('genericError'))+(reason?'':'\n'+tr('checkKey'));addMessage({role:'assistant',content:errorReply});if(voiceConversationMode)speakReply(errorReply,()=>{if(voiceConversationMode)setTimeout(startVoiceListening,500)})}else{addMessage({role:'assistant',content:data.reply,attachments:Array.isArray(data.attachments)?data.attachments:[]});if(voiceConversationMode)speakReply(data.reply,()=>{if(voiceConversationMode)setTimeout(startVoiceListening,350)})}await loadConversations();$('send').disabled=false;$('send').textContent=tr('send');$('prompt').focus()}
+async function sendMessage(){
+ if(!session||sendInProgress)return;
+ const text=$('prompt').value.trim();
+ if(!text&&!pendingFiles.length)return;
+ if(text.length>8000){alert(tr('tooLong'));return}
+ sendInProgress=true;
+ $('send').disabled=true;$('send').textContent='…';
+ let uploaded=[];
+ try{
+  if(!currentConversation)await newConversation();
+  if(!currentConversation)throw new Error('تعذر فتح محادثة جديدة.');
+  if(pendingFiles.length)uploaded=await uploadPendingFiles(currentConversation);
+  const savedText=text+(uploaded.length?'\n\n[تم إرفاق: '+uploaded.map(x=>x.name).join('، ')+']':'');
+  const attachments=uploaded.map(({name,type,size,path})=>({name,type,size,path}));
+  const {error:saveError}=await db.from('messages').insert({conversation_id:currentConversation,role:'user',content:savedText,attachments});
+  if(saveError)throw new Error(tr('sendError')+saveError.message);
+  pendingFiles=[];renderAttachments();$('prompt').value='';$('welcome').style.display='none';
+  await addMessage({role:'user',content:savedText,attachments});
+  const conversationId=currentConversation;
+  await db.from('conversations').update({updated_at:new Date().toISOString(),title:text.slice(0,45)||'مرفقات'}).eq('id',conversationId);
+  const pending=document.createElement('div');pending.className='msg assistant';pending.textContent=tr('thinking');pending.id='pendingReply';$('messages').appendChild(pending);$('messages').scrollTop=$('messages').scrollHeight;
+  const {data,error}=await db.functions.invoke('chatmalik-chat',{body:{conversation_id:conversationId,language:currentLang,locale:currentLang,reply_language:currentLang,attachments:uploaded,tool:activeTool,preferences:chatPreferences}});
+  pending.remove();
+  if(error||!data?.reply){
+   let reason=data?.error;
+   if(!reason&&error?.context&&typeof error.context.clone==='function'){try{const errorBody=await error.context.clone().json();reason=errorBody?.error}catch{}}
+   throw new Error((reason||error?.message||tr('genericError'))+(reason?'':'\n'+tr('checkKey')));
+  }
+  await addMessage({role:'assistant',content:data.reply,attachments:Array.isArray(data.attachments)?data.attachments:[]});
+  if(voiceConversationMode)speakReply(data.reply,ok=>{if(voiceConversationMode&&ok)setTimeout(startVoiceListening,350);else if(!ok){voiceConversationMode=false;$('voiceChat').classList.remove('voice-active')}});
+  activeTool=null;$('toolStatus').textContent='';
+ }catch(error){
+  const message=error?.message||tr('genericError');
+  console.error('ChatMALIK sendMessage failed:',error);
+  const pending=$('pendingReply');if(pending)pending.remove();
+  await addMessage({role:'assistant',content:tr('replyError')+message});
+  if(voiceConversationMode)speakReply(tr('replyError')+message,ok=>{if(voiceConversationMode&&ok)setTimeout(startVoiceListening,500);else if(!ok){voiceConversationMode=false;$('voiceChat').classList.remove('voice-active')}});
+ }finally{
+  sendInProgress=false;$('send').disabled=false;$('send').textContent=tr('send');
+  if(session)$('prompt').focus();
+ }
+}
 
 /* Attachments, camera capture, speech dictation and tool shortcuts */
 let pendingFiles=[],activeTool=null,pendingPreviewUrls=[];
@@ -226,12 +267,30 @@ let voiceConversationMode=false;
 function speechLanguage(){return ({ar:'ar-SA',en:'en-US',fr:'fr-FR',de:'de-DE',es:'es-ES',tr:'tr-TR',it:'it-IT',pt:'pt-PT',ru:'ru-RU',zh:'zh-CN',ja:'ja-JP'})[currentLang]||'en-US'}
 function speechOutputLanguage(text){const value=String(text||'');if(/[\u0600-\u06FF]/.test(value))return'ar-SA';if(/[\u0400-\u04FF]/.test(value))return'ru-RU';if(/[\u4E00-\u9FFF]/.test(value))return'zh-CN';if(/[\u3040-\u30FF]/.test(value))return'ja-JP';return speechLanguage()}
 function speakReply(text,onFinished){
- if(!('speechSynthesis' in window)){if(onFinished)onFinished();return}
- window.speechSynthesis.cancel();
- const u=new SpeechSynthesisUtterance(text);u.lang=speechOutputLanguage(text);u.rate=1;u.pitch=1;
- u.onend=()=>{if(onFinished)onFinished()};
- u.onerror=()=>{if(onFinished)onFinished()};
- window.speechSynthesis.speak(u);
+ const synth=window.speechSynthesis;
+ if(!synth||typeof window.SpeechSynthesisUtterance!=='function'){
+  $('toolStatus').textContent='ميزة النطق غير متاحة في إصدار Android الحالي. تحقق من تثبيت محرك تحويل النص إلى كلام في الهاتف.';
+  if(onFinished)onFinished(false);return false;
+ }
+ synth.cancel();
+ const lang=speechOutputLanguage(text);
+ const utterance=new SpeechSynthesisUtterance(String(text||''));
+ utterance.lang=lang;utterance.rate=1;utterance.pitch=1;
+ const voices=synth.getVoices();
+ const voice=voices.find(v=>v.lang.toLowerCase()===lang.toLowerCase())||voices.find(v=>v.lang.toLowerCase().startsWith(lang.slice(0,2).toLowerCase()));
+ if(voice)utterance.voice=voice;
+ utterance.onstart=()=>{$('toolStatus').textContent='ChatMALIK يتحدث الآن…'};
+ utterance.onend=()=>{if(onFinished)onFinished(true)};
+ utterance.onerror=e=>{
+  console.warn('Speech synthesis error:',e.error);
+  $('toolStatus').textContent='تعذر تشغيل الرد الصوتي. تأكد من تفعيل خدمة تحويل النص إلى كلام في إعدادات Android.';
+  if(onFinished)onFinished(false);
+ };
+ try{synth.speak(utterance);return true}catch(error){
+  console.error('Speech synthesis could not start:',error);
+  $('toolStatus').textContent='لم يتمكن Android من بدء تشغيل الصوت.';
+  if(onFinished)onFinished(false);return false;
+ }
 }
 function startVoiceListening(){
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
