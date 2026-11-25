@@ -8,6 +8,17 @@ const permissions = [
   'android.permission.RECORD_AUDIO'
 ];
 
+const applicationTag = '<application';
+const ttsQueries = `<queries>
+    <intent>
+        <action android:name="android.intent.action.TTS_SERVICE" />
+    </intent>
+</queries>
+    `;
+if (!xml.includes('android.intent.action.TTS_SERVICE')) {
+  xml = xml.replace(applicationTag, ttsQueries + applicationTag);
+}
+
 for (const permission of permissions) {
   if (!xml.includes(`android:name="${permission}"`)) {
     xml = xml.replace(
