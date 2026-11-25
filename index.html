@@ -279,50 +279,45 @@ function speechOutputLanguage(text){
 function finishVoiceTurn(){voiceBusy=false;if(voiceConversationMode){$('toolStatus').textContent='انتهى الرد. أستمع إليك الآن…';clearTimeout(voiceRestartTimer);voiceRestartTimer=setTimeout(()=>{if(voiceConversationMode)startVoiceListening()},650)}}
 async function getNativeSpeechOptions(value,preferredLanguage){
  const api=window.ChatMALIKVoice&&window.ChatMALIKVoice.TextToSpeech;
- let lang=preferredLanguage,voiceIndex;
- if(api&&typeof api.getSupportedVoices==='function'){
+ let lang=preferredLanguage;
+ if(api&&typeof api.isLanguageSupported==='function'){
   try{
-   const result=await api.getSupportedVoices();
-   const voices=Array.isArray(result?.voices)?result.voices:[];
-   const base=preferredLanguage.toLowerCase().split('-')[0];
-   let index=voices.findIndex(v=>(v.lang||'').toLowerCase()===preferredLanguage.toLowerCase());
-   if(index<0)index=voices.findIndex(v=>(v.lang||'').toLowerCase().startsWith(base+'-'));
-   if(index>=0){voiceIndex=index;lang=voices[index].lang||lang;}
-  }catch(error){console.warn('Could not list native speech voices',error)}
- }
- if(api&&typeof api.getSupportedLanguages==='function'){
-  try{
-   const result=await api.getSupportedLanguages();
-   const languages=Array.isArray(result?.languages)?result.languages:Array.isArray(result)?result:[];
-   if(languages.length&&!languages.some(item=>String(item).toLowerCase()===lang.toLowerCase())){
+   const support=await api.isLanguageSupported({lang});
+   if(support&&support.supported===false&&typeof api.getSupportedLanguages==='function'){
+    const result=await api.getSupportedLanguages();
+    const languages=Array.isArray(result?.languages)?result.languages:Array.isArray(result)?result:[];
     const base=lang.toLowerCase().split('-')[0];
     const match=languages.find(item=>String(item).toLowerCase().startsWith(base+'-'))||languages.find(item=>String(item).toLowerCase()===base);
     if(match)lang=String(match);
    }
-  }catch(error){console.warn('Could not list native speech languages',error)}
+  }catch(error){console.warn('Native language capability check failed; trying requested language',error)}
  }
- const options={text:value,lang,rate:0.95,pitch:1,volume:1,queueStrategy:0};
- if(Number.isInteger(voiceIndex))options.voice=voiceIndex;
- return options;
+ return {text:value,lang,rate:0.95,pitch:1,volume:1,category:'ambient'};
 }
 async function speakReply(text,onFinished){
  let finished=false,started=false,timer=null;
  const done=()=>{if(finished)return;finished=true;clearTimeout(timer);if(onFinished)onFinished()};
- const value=String(text||'').trim();if(!value){done();return}
+ const value=String(text||'').trim();
+ if(!value){done();return}
  const lang=speechOutputLanguage(value);
  const nativeVoice=window.ChatMALIKVoice&&window.ChatMALIKVoice.TextToSpeech;
- const useNative=async()=>{
-  if(!nativeVoice||finished)return false;
+ if(nativeVoice&&typeof nativeVoice.speak==='function'){
   try{
+   if(typeof nativeVoice.stop==='function')await nativeVoice.stop().catch(()=>{});
    const options=await getNativeSpeechOptions(value,lang);
    $('toolStatus').textContent='ChatMALIK يجهّز الصوت باللغة '+options.lang+'…';
-   await nativeVoice.speak(options);
-   $('toolStatus').textContent='تم تشغيل الرد الصوتي.';
-   done();return true;
-  }catch(error){console.warn('Native speech output failed',error);return false}
- };
- // Prefer the Android/iOS native speech engine and select an installed voice for the reply language.
- if(nativeVoice&&await useNative())return;
+   // The Capacitor TTS plugin accepts text/lang/rate/pitch/volume/category.
+   await Promise.race([
+    nativeVoice.speak(options),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('Native TTS timed out')),75000))
+   ]);
+   $('toolStatus').textContent='انتهى تشغيل الرد الصوتي.';
+   done();return;
+  }catch(error){
+   console.warn('Native speech output failed; trying browser TTS',error);
+   $('toolStatus').textContent='محرك الصوت الأصلي لم يستجب؛ نجرب محرك المتصفح…';
+  }
+ }
  if('speechSynthesis'in window&&typeof SpeechSynthesisUtterance!=='undefined'){
   try{
    const synth=window.speechSynthesis;
@@ -338,22 +333,28 @@ async function speakReply(text,onFinished){
    chooseVoice();
    if(!synth.getVoices().length)synth.addEventListener('voiceschanged',chooseVoice,{once:true});
    utterance.onstart=()=>{started=true;$('toolStatus').textContent='ChatMALIK يتحدث الآن…'};
-   utterance.onend=done;
+   utterance.onend=()=>{ $('toolStatus').textContent='انتهى تشغيل الرد الصوتي.';done()};
    utterance.onerror=event=>{
     console.warn('Browser speech error',event.error);
-    $('toolStatus').textContent='تعذر تشغيل الصوت. تحقق من محرك تحويل النص إلى كلام والأصوات المثبتة.';
+    $('toolStatus').textContent='تعذر تشغيل الصوت ('+(event.error||'خطأ غير معروف')+'). افحص محرك تحويل النص إلى كلام والأصوات المثبتة.';
     done();
    };
    synth.speak(utterance);
    timer=setTimeout(()=>{
     if(finished)return;
-    if(!started){$('toolStatus').textContent='لم يبدأ الصوت. تحقق من محرك النطق وأصوات اللغة في إعدادات الهاتف.';done()}
-   },7000);
-   setTimeout(()=>{if(!finished&&synth.paused)synth.resume()},250);
+    if(!started){
+     $('toolStatus').textContent='لم يبدأ محرك النطق خلال المهلة. تأكد من تثبيت صوت '+lang+' وتعيينه في إعدادات الهاتف.';
+     done();
+    }
+   },12000);
+   const resumeTimer=setInterval(()=>{
+    if(finished){clearInterval(resumeTimer);return}
+    if(synth.paused)synth.resume();
+   },1000);
    return;
   }catch(error){console.warn('Browser speech synthesis failed',error)}
  }
- $('toolStatus').textContent='وصل رد الذكاء الاصطناعي كتابةً، لكن محرك النطق غير متاح. افحص أصوات تحويل النص إلى كلام في إعدادات الهاتف.';
+ $('toolStatus').textContent='وصل الرد كتابةً، لكن لا يوجد محرك نطق متاح على هذا الجهاز.';
  done();
 }
 async function startNativeVoiceListening(singleShot=false){
