@@ -13,6 +13,6 @@ for (const entry of ['index.html', 'manifest.webmanifest', 'icons']) {
 const indexUrl = new URL('index.html', output);
 const { readFile, writeFile } = await import('node:fs/promises');
 let html = await readFile(indexUrl, 'utf8');
-html = html.replace('</head>', '  <script src="./native-voice.js"></script>\n</head>');
+html = html.replace('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', './supabase.js');\nhtml = html.replace('</head>', '  <script src="./native-voice.js"></script>\n</head>');
 await writeFile(indexUrl, html);
 console.log('ChatMALIK web app and native voice bridge copied into www/ for the Android build.');
