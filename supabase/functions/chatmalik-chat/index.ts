@@ -262,7 +262,7 @@ ${lengthInstructions[selectedLength] || lengthInstructions.balanced}
 ${memoryInstructions}`;
 
     let result: any = {};
-    let provider = "cloudflare";
+    let provider = "groq";
     let groqFailureStatus = 0;
     let groqFailureMessage = "";
 
@@ -330,7 +330,6 @@ ${memoryInstructions}`;
             input: responseInput,
             ...(responseTools.length ? { tools: responseTools } : {}),
             max_output_tokens: 900,
-            store: false,
           }),
           signal: AbortSignal.timeout(45000),
         });
