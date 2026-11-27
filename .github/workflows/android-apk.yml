@@ -9,6 +9,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'capacitor.config.json'
+      - 'icons/**'
       - 'scripts/**'
       - '.github/workflows/android-apk.yml'
 
@@ -40,6 +41,8 @@ jobs:
         run: npx cap add android
       - name: Build web assets and sync native project
         run: npm run cap:sync
+      - name: Generate original ChatMALIK dark-blue launcher icons
+        run: node scripts/generate-android-icons.mjs
       - name: Build debug APK
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug
       - name: Upload installable APK artifact
@@ -54,7 +57,7 @@ jobs:
         with:
           tag_name: android-latest
           name: ChatMALIK Android (Latest)
-          body: Latest installable ChatMALIK Android APK built from the main branch.
+          body: Latest installable ChatMALIK Android APK with the original dark-blue ChatMALIK launcher icon, built from the main branch.
           files: android/app/build/outputs/apk/debug/app-debug.apk
           overwrite_files: true
           make_latest: true
