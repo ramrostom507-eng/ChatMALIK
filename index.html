@@ -208,10 +208,10 @@ const SUPABASE_URL='https://qitjxsofexftxrrkdvom.supabase.co';
 const SUPABASE_KEY='sb_publishable_QP4lSFt3-eSpMTTcOhReMw_2AMZn8U8';
 if(!window.supabase||typeof window.supabase.createClient!=='function'){const box=document.getElementById('authStatus');if(box)box.textContent='تعذر تحميل خدمة تسجيل الدخول. أغلق التطبيق وافتحه مجدداً، وإذا استمرت المشكلة أعد تثبيت النسخة الأخيرة.';throw new Error('Supabase client library did not load');}
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit',storage:window.localStorage,storageKey:'sb-qitjxsofexftxrrkdvom-auth-token'}});
+const $=id=>document.getElementById(id);
 const CHAT_MALIK_LAST_ACCOUNT_KEY='chatmalik-last-account';
 try{const rememberedAccount=localStorage.getItem(CHAT_MALIK_LAST_ACCOUNT_KEY);if(rememberedAccount&&!$('email').value)$('email').value=rememberedAccount;}catch(e){console.warn('Could not restore remembered account email:',e);}
 let session=null,currentConversation=null,signUpMode=false,recoveryMode=false;
-const $=id=>document.getElementById(id);
 function status(t){$('authStatus').textContent=t}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function showAuth(show){$('auth').style.display=show?'grid':'none';$('auth').setAttribute('aria-hidden',show?'false':'true')}
