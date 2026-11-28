@@ -48,6 +48,16 @@ Deno.serve(async (req: Request) => {
     if (userError || !userData.user) return json({ error: "جلسة الدخول غير صالحة. سجّل الدخول مجدداً." }, 401);
 
     const body = await req.json().catch(() => ({}));
+    if (body?.health_check === true) {
+      const providerReady = Boolean(cloudflareApiToken || groqKey || geminiKey);
+      return json({
+        ok: providerReady,
+        service: "chatmalik-chat",
+        authenticated: true,
+        stage: providerReady ? "ready" : "provider_config",
+        error: providerReady ? undefined : "No AI provider is configured.",
+      }, providerReady ? 200 : 503);
+    }
     const conversationId = body?.conversation_id;
     if (typeof conversationId !== "string") return json({ error: "معرّف المحادثة غير صالح." }, 400);
 
